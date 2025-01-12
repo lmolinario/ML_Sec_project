@@ -7,7 +7,7 @@ This project is developed for the UNICA.IT University Machine Learning Security 
 
 > **Author**: Lello Molinario: 70/90/00369
 
-DESCRIPTION.......
+The aim of this project is to re-evaluate 5 RobustBench models with another attack algorithm (e.g. FMN) and identify samples for which one attack works and the other doesn't. 
 
 ***
 # Table of Contents
