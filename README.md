@@ -31,7 +31,7 @@ This project is developed for the UNICA.IT University Machine Learning Security 
 
 - Run the file `entrypoint.py` to start the program (in UNIX-like System)
 
-### Before run ensure yor are installed Python 3.9 
+### Before running it, make sure you have Python 3.0 installed.
 
 ## Project goal
 The aim of this project is to re-evaluate 5 RobustBench models with another attack algorithm (e.g. FMN) and identify samples for which one attack works and the other doesn't. 
