@@ -36,6 +36,20 @@ This project is developed for the UNICA.IT University Machine Learning Security 
 ## Project goal
 The goal of this project is to re-evaluate 5 RobustBench models using another attack algorithm (e.g., FMN) and identify samples for which one attack succeeds while the other fails. In other words, we aim to compare the effectiveness of different attacks against robust models, to analyze in which cases one type of attack is effective while another fails, thus contributing to a deeper understanding of the robustness of models and attack algorithms.
 
+FMN (Fast Gradient Method)
+
+FMN, also referred to as FGSM (Fast Gradient Sign Method), is one of the most common attacks against neural networks. The basic idea is to compute the gradient of the model with respect to the input image and add a perturbation in the direction of the gradient to maximize the loss. This type of attack can be implemented as follows:
+
+δ=ϵ⋅sign(∇x​J(θ,x,y))
+
+Where:
+
+    δ is the generated perturbation.
+    ϵ is the perturbation magnitude (i.e., the strength of the attack).
+    ∇xJ(θ,x,y) is the gradient of the loss function J with respect to the input image x, computed for the model parameters θ.
+    sign(⋅) refers to the function that takes the sign of each gradient value.
+
+
 ## Solution Design
 #### Modularity: 
 The project will be structured in a modular way to allow the replacement of attack models and algorithms without having to redo the entire flow. Each component (model, attack, evaluation) will be a separate module.
