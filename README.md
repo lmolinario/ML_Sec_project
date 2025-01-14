@@ -34,11 +34,13 @@ This project is developed for the UNICA.IT University Machine Learning Security 
 ### Before running it, make sure you have Python 3.9 installed.
 
 ## Project goal
-The aim of this project is to re-evaluate 5 RobustBench models with another attack algorithm (e.g. FMN) and identify samples for which one attack works and the other doesn't. 
-
+The goal of this project is to re-evaluate 5 RobustBench models using another attack algorithm (e.g., FMN) and identify samples for which one attack succeeds while the other fails. In other words, we aim to compare the effectiveness of different attacks against robust models, to analyze in which cases one type of attack is effective while another fails, thus contributing to a deeper understanding of the robustness of models and attack algorithms.
 
 ## Solution Design
-
+#### Modularity: 
+The project will be structured in a modular way to allow the replacement of attack models and algorithms without having to redo the entire flow. Each component (model, attack, evaluation) will be a separate module.
+#### Scalability: 
+The system will be scalable to be able to add more RobustBench models or try different attack algorithms in the future.
 
 
 ## Conclusions
