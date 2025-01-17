@@ -28,10 +28,15 @@ This project is developed for the UNICA.IT University Machine Learning Security 
   ```bash
   pip3 install -r requirements.txt
   ```
+- Make sure you have the following libraries installed:
 
-- Run the file `entrypoint.py` to start the program (in UNIX-like System)
+  ```bash
+  pip install git+https://github.com/pralab/secml
+  pip install git+https://github.com/RobustBench/robustbench.git
+  ```
+- Run the file `entrypoint.py` to start the program 
 
-### Before running it, make sure you have Python 3.9 installed.
+### Before running it, make sure you have Python 3.9 installed for compatibility between all libraries.
 
 ## Project goal
 The goal of this project is to re-evaluate 5 RobustBench models using another attack algorithm (e.g., FMN) and identify samples for which one attack succeeds while the other fails. In other words, we aim to compare the effectiveness of different attacks against robust models, to analyze in which cases one type of attack is effective while another fails, thus contributing to a deeper understanding of the robustness of models and attack algorithms.
@@ -41,13 +46,16 @@ The goal of this project is to re-evaluate 5 RobustBench models using another at
 As indicated in our project I took as a reference the FMN attack, also known as FGSM (Fast Gradient Sign Method), which is one of the most common attacks against neural networks.
 The basic idea of ​​this attack is to calculate the gradient of the model with respect to the input image and add a perturbation in the direction of the gradient to maximize the loss. This type of attack can be implemented as follows:
 
-δ=ϵ⋅sign(∇x​J(θ,x,y))
+ ![δ=ϵ⋅sign(∇xJ(θ,x,y))](misc/Formula FMN.png)
 
 Where:
 
 δ is the generated perturbation.
+
 ϵ is the magnitude of the perturbation (i.e. the strength of the attack).
+
 ∇xJ(θ,x,y) is the gradient of the loss function J with respect to the input image x, calculated for the model parameters θ.
+
 sign(⋅) refers to the function that takes the sign of each gradient value.
 
 The norm is a fundamental concept in all adversarial attacks.
@@ -65,8 +73,12 @@ L1 norm: measures the absolute sum of the pixel-by-pixel differences. It is less
 Lp norm (where p is a value between 1 and ∞): It is a generalization of the L1, L2 and L∞ norms.
 
 For our project, we will use and compare "L2" and "L∞".
+
 #### Modularity: 
-The project will be structured in a modular way to allow the replacement of attack models and algorithms without having to redo the entire flow. Each component (model, attack, evaluation) will be a separate module.
+The project is structured in a modular way to allow the replacement of attack models and algorithms without having to redo the entire flow.
+
+To do this I used to divide the code into "functions", "classes" and I used "pattern designs".
+
 #### Scalability: 
 The system will be scalable to be able to add more RobustBench models or try different attack algorithms in the future.
 
