@@ -180,7 +180,7 @@ def plot_images(originals, adversarials_linf, adversarials_l2, labels, model_idx
 def display_attack_images(attack_data_linf, attack_data_l2, num_images=5):
     # Seleziona alcune immagini di attacco (per esempio, le prime 5)
     for idx, model_data in attack_data_linf.items():
-        if idx >= len(models):
+        if idx >= len(_models):
             continue
         adv_images_linf = model_data['adv_ds'].X.get_data()  # Accedi ai dati grezzi come array NumPy
         adv_images_l2 = attack_data_l2[idx]['adv_ds'].X.get_data()

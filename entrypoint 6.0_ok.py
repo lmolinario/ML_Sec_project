@@ -14,6 +14,14 @@ import foolbox as fb
 from secml.explanation import CExplainerIntegratedGradients
 from misc import logo
 
+# Caricamento dei modelli RobustBench
+model_names = [
+    "Wong2020Fast",
+    "Engstrom2019Robustness",
+    "Andriushchenko2020Understanding",
+    "Cui2023Decoupled_WRN-28-10",
+    "Chen2020Adversarial"
+]
 
 # Funzione per caricare un modello da RobustBench
 def load_model(model_name):
@@ -27,14 +35,6 @@ def load_model(model_name):
     )
     return clf
 
-# Caricamento dei modelli RobustBench
-model_names = [
-    "Wong2020Fast",
-    "Engstrom2019Robustness",
-    "Andriushchenko2020Understanding",
-    "Cui2023Decoupled_WRN-28-10",
-    "Chen2020Adversarial"
-]
 
 n_samples = 64
 dataset_labels = [
