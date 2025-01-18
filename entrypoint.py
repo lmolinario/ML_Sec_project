@@ -1,5 +1,5 @@
 """# Machine Learning Security Project - Project 1
-Re-evaluate 5 RobustBench models with another attack algorithm (e.g. FMN)
+Re-evaluate 5 RobustBench _models with another attack algorithm (e.g. FMN)
 and identify samples for which one attack works and the other doesn't. Explain the results
  - i.e., provide some motivations on why one of the attacks did not work properly, while the other did.
 
@@ -106,7 +106,7 @@ def load_model(model_name):
 
     return clf
 
-# Load models
+# Load _models
 model_names = [
     "Wong2020Fast",
     "Engstrom2019Robustness",
