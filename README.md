@@ -18,6 +18,7 @@ This project is developed for the UNICA.IT University Machine Learning Security 
 
 ***
 ## Installation
+### Before running it, make sure you have Python 3.10 installed for compatibility between all libraries.
 
 - Download the ZIP code or clone the repository inside Raspberry PI 3 B+ with
   ```bash
@@ -26,17 +27,33 @@ This project is developed for the UNICA.IT University Machine Learning Security 
 - Install the requirements with
 
   ```bash
+  python3.10 -m pip install git+https://github.com/RobustBench/robustbench.git
+
+  git clone https://github.com/alirezaabdollahpour/SuperDeepFool.git SuperDeepFool
+
+
+- Modificare il file requirements.txt per ignorare le versioni specifiche non compatibili
+  ```bash
+  sed -i '/numpy==1.19.0/d' SuperDeepFool/requirements.txt
+  sed -i '/matplotlib==3.4.2/d' SuperDeepFool/requirements.txt
+  sed -i '/numpy==1.19.0/d' SuperDeepFool/requirements.txt
+  
+-Installare il resto delle dipendenze
+  ```bash
+  pip3 install -r SuperDeepFool/requirements.txt
+
+-Installare il resto delle dipendenze
+  ```bash
   pip3 install -r requirements.txt
-  ```
+  
 - Make sure you have the following libraries installed:
 
   ```bash
-  pip install git+https://github.com/pralab/secml
-  pip install git+https://github.com/RobustBench/robustbench.git
+  pip3 install git+https://github.com/pralab/secml
+  pip3 install git+https://github.com/RobustBench/robustbench.git
   ```
 - Run the file `entrypoint.py` to start the program 
 
-### Before running it, make sure you have Python 3.9 installed for compatibility between all libraries.
 
 ## Project goal
 The goal of this project is to re-evaluate 5 RobustBench models using another attack algorithm (e.g., FMN) and identify samples for which one attack succeeds while the other fails. In other words, we aim to compare the effectiveness of different attacks against robust models, to analyze in which cases one type of attack is effective while another fails, thus contributing to a deeper understanding of the robustness of models and attack algorithms.
