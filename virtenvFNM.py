@@ -315,3 +315,205 @@ import pickle
 with open('results_FNM.pkl', 'rb') as file:
     attack_data = pickle.load(file)
 
+
+
+# Calcolo delle predizioni e accuratezza dei modelli
+metric        = CMetricAccuracy()
+models_preds  = [clf.predict(ts.X) for clf in models]
+accuracies    = [metric.performance_score(y_true=ts.Y, y_pred=y_pred) for y_pred in models_preds]
+
+
+print("-" * 90)
+# Stampa delle accuratezze dopo l'attacco
+
+for idx in range(len(model_names)):
+    accuracy = metric.performance_score(
+        y_true=ts.Y,
+        y_pred=attack_data[idx]['result']['y_pred_adv']
+    )
+    print(f"Model name: {model_names[idx]:<40} - Model accuracy under attack: {(accuracy * 100):.2f} %")
+print("-" * 90)
+
+
+
+
+import numpy as np
+from secml.figure import CFigure
+from secml.array import CArray
+from secml.ml.classifiers.loss import CSoftmax
+
+#def convert_image(image):
+#    """
+#    Converte un'immagine da CArray a NumPy con formato (H, W, C).
+#    """
+#    return image.tondarray().reshape(input_shape).transpose(1, 2, 0)
+
+
+def convert_image(image):
+    """
+    Converte un'immagine da CArray o NumPy in formato (H, W, C).
+    """
+    if hasattr(image, "tondarray"):  # Se è un CArray
+        image = image.tondarray()  # Converti in NumPy
+    return image.reshape(input_shape).transpose(1, 2, 0)
+
+
+def show_image(fig, local_idx, img, img_adv, expl, label, pred):
+    """
+    Mostra l'immagine originale, avversa, perturbazione e spiegazione.
+    """
+    # Calcolo della perturbazione
+    diff_img = img_adv - img
+    diff_img -= diff_img.min()
+    diff_img /= diff_img.max()
+
+    # Calcola la posizione del subplot nella griglia
+    fig.subplot(10, 4, local_idx + 1)  # `local_idx` parte da 0
+
+    # Immagine originale
+    fig.sp.imshow(convert_image(img))
+    fig.sp.title(f"True: {label}")
+    fig.sp.xticks([])
+    fig.sp.yticks([])
+
+    # Immagine avversa
+    fig.subplot(10, 4, local_idx + 2)
+    fig.sp.imshow(convert_image(img_adv))
+    fig.sp.title(f'Adv: {pred}')
+    fig.sp.xticks([])
+    fig.sp.yticks([])
+
+    # Perturbazione
+    fig.subplot(10, 4, local_idx + 3)
+    fig.sp.imshow(convert_image(diff_img))
+    fig.sp.title('Perturbation')
+    fig.sp.xticks([])
+    fig.sp.yticks([])
+
+    # Spiegazione
+    expl = convert_image(expl)
+    r = np.fabs(expl[:, :, 0])
+    g = np.fabs(expl[:, :, 1])
+    b = np.fabs(expl[:, :, 2])
+    expl = np.maximum(np.maximum(r, g), b)
+
+    fig.subplot(10, 4, local_idx + 4)
+    fig.sp.imshow(expl, cmap='seismic')
+    fig.sp.title('Explain')
+    fig.sp.xticks([])
+    fig.sp.yticks([])
+
+print ('y_pred_adv', attack_data)
+
+import numpy as np
+
+# Numero massimo di subplot per figura
+max_subplots = 20  # 5 righe x 4 colonne
+n_cols = 4  # Numero fisso di colonne
+epsilon = 8 / 255  # Limite di perturbazione
+
+# Itera sui modelli
+for model_id in range(len(models)):
+    print(f"Visualizzazione per il modello: {model_names[model_id]}")
+
+    adv_ds = attack_data[model_id]['result']['adv_ds']
+    y_adv = attack_data[model_id]['result']['y_pred_adv']
+    attributions = attack_data[model_id]['result']['attributions']
+
+    # Reshape delle immagini in formato (n_samples, 3, 32, 32)
+    adv_images = adv_ds.X.tondarray().reshape(-1, 3, 32, 32)
+    original_images = ts.X.tondarray().reshape(-1, 3, 32, 32)
+
+    # Calcola la distanza L∞ per tutti i campioni
+    distances = np.abs(adv_images - original_images).max(axis=(1, 2, 3))
+
+    # Filtra i campioni che soddisfano le condizioni
+    selected_indices = [
+        idx for idx in range(ts.X.shape[0])
+        if (distances[idx] < epsilon and y_adv[idx] != ts.Y[idx])
+    ]
+
+    print(f"Campioni selezionati per il modello {model_names[model_id]}: {len(selected_indices)}")
+
+    if len(selected_indices) > 0:
+        # Seleziona 3 campioni casuali tra quelli filtrati
+        random_indices = np.random.choice(selected_indices, size=min(3, len(selected_indices)), replace=False)
+
+        # Crea una nuova figura per i campioni selezionati
+        n_rows = len(random_indices)  # Una riga per ogni campione
+        fig = CFigure(height=n_rows * 4, width=12, fontsize=14)
+
+        for ydx, idx in enumerate(random_indices):
+            img = original_images[idx]
+            img_adv = adv_images[idx]
+            expl = attributions[idx][y_adv[idx].item(), :]
+
+            # Calcola la differenza e normalizza solo se possibile
+            diff_img = img_adv - img
+            if diff_img.max() > 1e-6:
+                diff_img /= diff_img.max()
+            else:
+                diff_img.fill(0)  # Assegna zero per evitare NaN
+
+            # Calcola l'indice locale per il subplot
+            local_idx = ydx * 4
+
+            # Mostra l'immagine nel subplot calcolato
+            show_image(
+                fig,
+                local_idx,
+                img,
+                img_adv,
+                expl,
+                dataset_labels[ts.Y[idx].item()],
+                dataset_labels[y_adv[idx].item()]
+            )
+
+        # Completa e salva la figura per i campioni selezionati
+        fig.tight_layout(rect=[0, 0.003, 1, 0.94])
+        fig.savefig(f"filtered_explainability_model_{model_id}_random.jpg")
+        fig.show()
+
+# Visualizzazione del percorso di attacco per ciascun modello
+fig = CFigure(width=30, height=4, fontsize=10, linewidth=2)
+
+for model_id in range(len(models)):
+    print(f"Predizione in corso per il modello {model_names[model_id]}...")
+
+    if 'x_seq' not in attack_data[model_id]['result']:
+        print(f"'x_seq' non trovato per il modello {model_names[model_id]}")
+        continue
+
+    x_seq = attack_data[model_id]['result']['x_seq']
+    n_iter = x_seq.shape[0]
+    itrs = CArray.arange(n_iter)
+
+    # Riduci i dati se necessario
+    x_seq = x_seq[::2]  # Prendi 1 punto ogni 2 iterazioni per velocità
+    scores = models[model_id].predict(x_seq, return_decision_function=True)[1]
+
+    # Applica il softmax per ottenere valori in [0, 1]
+    scores = CSoftmax().softmax(scores)
+
+    fig.subplot(1, 5, model_id + 1)
+
+    if model_id == 0:
+        fig.sp.ylabel('confidence')
+
+    fig.sp.xlabel('iteration')
+
+    fig.sp.plot(itrs, scores[:, ts.Y[0]], linestyle='--', c='black')
+
+    if 'y_pred_adv' in attack_data[model_id]:
+        fig.sp.plot(itrs, scores[:, attack_data[model_id]['y_pred_adv'][0]], c='black')
+    else:
+        print(f"'y_pred_adv' non trovato per il modello {model_names[model_id]}")
+        continue
+
+    fig.sp.xlim(top=25, bottom=0)
+
+    fig.sp.title(f"Confidence Sample - Model: {model_names[model_id]}")
+    fig.sp.legend(['Confidence True Class', 'Confidence Adv. Class'])
+
+fig.tight_layout()
+fig.show()
