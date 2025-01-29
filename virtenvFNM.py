@@ -334,7 +334,7 @@ for idx in range(len(model_names)):
     print(f"Model name: {model_names[idx]:<40} - Model accuracy under attack: {(accuracy * 100):.2f} %")
 print("-" * 90)
 
-
+####################################################################################################################################
 
 
 import numpy as np
@@ -368,7 +368,7 @@ def show_image(fig, local_idx, img, img_adv, expl, label, pred):
     diff_img /= diff_img.max()
 
     # Calcola la posizione del subplot nella griglia
-    fig.subplot(10, 4, local_idx + 1)  # `local_idx` parte da 0
+    fig.subplot(3, 4, local_idx + 1)  # `local_idx` parte da 0
 
     # Immagine originale
     fig.sp.imshow(convert_image(img))
@@ -377,14 +377,14 @@ def show_image(fig, local_idx, img, img_adv, expl, label, pred):
     fig.sp.yticks([])
 
     # Immagine avversa
-    fig.subplot(10, 4, local_idx + 2)
+    fig.subplot(3, 4, local_idx + 2)
     fig.sp.imshow(convert_image(img_adv))
     fig.sp.title(f'Adv: {pred}')
     fig.sp.xticks([])
     fig.sp.yticks([])
 
     # Perturbazione
-    fig.subplot(10, 4, local_idx + 3)
+    fig.subplot(3, 4, local_idx + 3)
     fig.sp.imshow(convert_image(diff_img))
     fig.sp.title('Perturbation')
     fig.sp.xticks([])
@@ -397,7 +397,7 @@ def show_image(fig, local_idx, img, img_adv, expl, label, pred):
     b = np.fabs(expl[:, :, 2])
     expl = np.maximum(np.maximum(r, g), b)
 
-    fig.subplot(10, 4, local_idx + 4)
+    fig.subplot(3, 4, local_idx + 4)
     fig.sp.imshow(expl, cmap='seismic')
     fig.sp.title('Explain')
     fig.sp.xticks([])
@@ -414,7 +414,7 @@ epsilon = 8 / 255  # Limite di perturbazione
 
 # Itera sui modelli
 for model_id in range(len(models)):
-    print(f"Visualizzazione per il modello: {model_names[model_id]}")
+    print(f"\nVisualizzazione per il modello: {model_names[model_id]}")
 
     adv_ds = attack_data[model_id]['result']['adv_ds']
     y_adv = attack_data[model_id]['result']['y_pred_adv']
@@ -433,27 +433,40 @@ for model_id in range(len(models)):
         if (distances[idx] < epsilon and y_adv[idx] != ts.Y[idx])
     ]
 
-    print(f"Campioni selezionati per il modello {model_names[model_id]}: {len(selected_indices)}")
+    print(f"\nCampioni selezionati per il modello {model_names[model_id]}: {len(selected_indices)}")
 
-    if len(selected_indices) > 0:
-        # Seleziona 3 campioni casuali tra quelli filtrati
-        random_indices = np.random.choice(selected_indices, size=min(3, len(selected_indices)), replace=False)
+    valid_indices = []  # Per salvare i campioni validi
+    for idx in selected_indices:
+        img = original_images[idx]
+        img_adv = adv_images[idx]
+        diff_img = img_adv - img
 
+        # Controllo per evitare divisione per zero
+        if diff_img.max() > 1e-6:
+            valid_indices.append(idx)
+
+        # Interrompe quando abbiamo 3 campioni validi
+        if len(valid_indices) == 3:
+            break
+
+    print(f"\nCampioni validi per il modello {model_names[model_id]}: {len(valid_indices)}")
+
+    if len(valid_indices) > 0:
         # Crea una nuova figura per i campioni selezionati
-        n_rows = len(random_indices)  # Una riga per ogni campione
-        fig = CFigure(height=n_rows * 4, width=12, fontsize=14)
+        n_rows = len(valid_indices)  # Una riga per ogni campione
+        fig = CFigure(height=n_rows * 6, width=18, fontsize=16)
 
-        for ydx, idx in enumerate(random_indices):
+        # Aggiungi il titolo generale sopra la figura
+        fig._fig.suptitle(f"\nExplainability for Model: {model_names[model_id]}", fontsize=20, y=1.05)
+
+        for ydx, idx in enumerate(valid_indices):
             img = original_images[idx]
             img_adv = adv_images[idx]
             expl = attributions[idx][y_adv[idx].item(), :]
 
-            # Calcola la differenza e normalizza solo se possibile
+            # Calcola la differenza e normalizza
             diff_img = img_adv - img
-            if diff_img.max() > 1e-6:
-                diff_img /= diff_img.max()
-            else:
-                diff_img.fill(0)  # Assegna zero per evitare NaN
+            diff_img /= diff_img.max()  # Sicuro, poiché controllato prima
 
             # Calcola l'indice locale per il subplot
             local_idx = ydx * 4
@@ -471,9 +484,10 @@ for model_id in range(len(models)):
 
         # Completa e salva la figura per i campioni selezionati
         fig.tight_layout(rect=[0, 0.003, 1, 0.94])
-        fig.savefig(f"filtered_explainability_model_{model_id}_random.jpg")
+        fig.savefig(f"Explainability_model_{model_names[model_id]}.jpg")
         fig.show()
 
+"""
 # Visualizzazione del percorso di attacco per ciascun modello
 fig = CFigure(width=30, height=4, fontsize=10, linewidth=2)
 
@@ -517,3 +531,4 @@ for model_id in range(len(models)):
 
 fig.tight_layout()
 fig.show()
+"""

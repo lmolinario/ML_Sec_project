@@ -91,6 +91,54 @@ Lp norm (where p is a value between 1 and ∞): It is a generalization of the L1
 
 For our project, we will use and compare "L2" and "L∞".
 
+
+La distanza \( L^\infty \) è una misura fondamentale nei problemi di attacchi avversari, poiché rappresenta il massimo cambiamento che viene applicato a un singolo pixel nell'immagine durante la generazione di campioni avversari. Limitare la distanza \( L^\infty \) a un valore come \( 8/255 \) ha diverse motivazioni e importanza:
+
+---
+
+### 1. **Realismo del campione avversario**
+   - **Motivazione**: Gli attacchi avversari devono essere visivamente impercettibili per un osservatore umano. Se la perturbazione supera un certo limite, il campione avversario potrebbe apparire distorto o artificiale.
+   - **Spiegazione**: Un'alterazione minore (ad esempio \( \epsilon = 8/255 \)) garantisce che i cambiamenti nei pixel siano minimi, mantenendo l'immagine visivamente simile all'originale.
+
+---
+
+### 2. **Contesto applicativo: CIFAR-10**
+   - CIFAR-10 utilizza immagini normalizzate con valori dei pixel compresi tra 0 e 1.
+   - Un valore di \( 8/255 \) rappresenta una variazione molto piccola (circa il 3% della scala completa), il che è coerente con l'idea di una perturbazione "subdola" che sfrutta la vulnerabilità del modello senza modificare eccessivamente l'immagine.
+
+---
+
+### 3. **Standard nella comunità di ricerca**
+   - **Motivazione**: La scelta di \( 8/255 \) non è arbitraria; è un valore standardizzato in molti studi sugli attacchi avversari, soprattutto per modelli testati su CIFAR-10 con la norma \( L^\infty \).
+   - **Vantaggio**: Permette il confronto diretto tra risultati di attacchi avversari e difese, poiché molti benchmark utilizzano lo stesso limite.
+
+---
+
+### 4. **Robustezza del modello**
+   - Limitare \( L^\infty \) a \( 8/255 \) aiuta a valutare quanto un modello sia robusto contro piccoli cambiamenti nei dati di input.
+   - Un modello robusto dovrebbe essere in grado di mantenere prestazioni elevate anche con perturbazioni che rispettano questo limite.
+
+---
+
+### 5. **Efficienza computazionale**
+   - Generare campioni avversari con vincoli di \( L^\infty \) più piccoli richiede una minore esplorazione dello spazio delle perturbazioni, rendendo gli attacchi più efficienti da calcolare.
+
+---
+
+### 6. **Controllo sulla generalizzabilità degli attacchi**
+   - **Motivazione**: Limiti di \( L^\infty \) garantiscono che i risultati degli attacchi avversari siano affidabili e replicabili.
+   - **Spiegazione**: Perturbazioni maggiori potrebbero attivare artefatti specifici del modello o del dataset, compromettendo la generalizzabilità dei risultati.
+
+---
+
+### Conclusione
+Limitare la distanza \( L^\infty \) a \( 8/255 \) è essenziale per:
+1. Garantire la **qualità e il realismo visivo** dei campioni avversari.
+2. Permettere un **confronto equo** con altri metodi nella comunità di ricerca.
+3. Valutare la **robustezza del modello** in modo standardizzato.
+4. Evitare che il campione avversario diventi irrealistico o poco utile per analisi pratiche.
+
+Se hai altre domande o vuoi approfondire, fammi sapere! 😊
 #### Modularity: 
 The project is structured in a modular way to allow the replacement of attack models and algorithms without having to redo the entire flow.
 
