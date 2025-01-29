@@ -451,13 +451,15 @@ for model_id in range(len(models)):
 
     print(f"\nCampioni validi per il modello {model_names[model_id]}: {len(valid_indices)}")
 
+
     if len(valid_indices) > 0:
         # Crea una nuova figura per i campioni selezionati
         n_rows = len(valid_indices)  # Una riga per ogni campione
         fig = CFigure(height=n_rows * 6, width=18, fontsize=16)
 
-        # Aggiungi il titolo generale sopra la figura
-        fig._fig.suptitle(f"\nExplainability for Model: {model_names[model_id]}", fontsize=20, y=1.05)
+        # Aggiungi manualmente il titolo sopra la figura
+        fig.text(0.5, 1.02, f"Explainability for Model: {model_names[model_id]}", fontsize=20, weight='bold',
+                 ha='center')
 
         for ydx, idx in enumerate(valid_indices):
             img = original_images[idx]
@@ -484,7 +486,7 @@ for model_id in range(len(models)):
 
         # Completa e salva la figura per i campioni selezionati
         fig.tight_layout(rect=[0, 0.003, 1, 0.94])
-        fig.savefig(f"Explainability_model_{model_names[model_id]}.jpg")
+        fig.savefig(f"filtered_explainability_model_{model_names[model_id]}_valid.jpg")
         fig.show()
 
 """
