@@ -318,67 +318,6 @@ with open('results_FNM.pkl', 'rb') as file:
 
 
 
-
-
-
-################################################################################################
-"""            'model_name': model_names[idx],
-            'result': attack_result
-                        'x_seq': x_seq,
-            'y_pred_adv': y_pred,
-            'adv_ds': adv_ds,
-            'attributions': attributions if explainer_class else None,
-            'confidence': scores,
-            'iterations': itrs
-            """
-
-
-
-import numpy as np
-import matplotlib.pyplot as plt
-
-# Scegli un campione specifico
-sample_id = 2
-model_id = 0  # Scegli il modello da analizzare
-
-# Recupera i dati dell'attacco
-attack_result = attack_data[model_id]['result']
-
-# Confidence per tutte le iterazioni e classi
-iterations = attack_result['iterations'].tondarray()
-confidence_scores = attack_result['confidence'].tondarray()
-
-print
-
-# Classe reale e classe avversaria (convertite correttamente)
-true_class = int(ts.Y[sample_id].item())  # Classe reale del campione
-adv_class = int(attack_result['y_pred_adv'][sample_id].item())  # Classe predetta dopo attacco
-
-# Confidence nel tempo per la classe reale e avversaria
-confidence_true = confidence_scores[:, true_class]
-confidence_adv = confidence_scores[:, adv_class]
-
-# Plot dell'evoluzione della confidence
-plt.figure(figsize=(10, 6))
-plt.plot(iterations, confidence_true, label=f"Confidence Real Class ({true_class})", linestyle='dashed')
-plt.plot(iterations, confidence_adv, label=f"Confidence Adversarial Class ({adv_class})", linestyle='solid')
-
-plt.xlabel("Iterations")
-plt.ylabel("Confidence Score")
-plt.title(f"Confidence Evolution - Sample {sample_id} (Model: {attack_data[model_id]['model_name']})")
-plt.legend()
-plt.grid()
-
-
-plt.savefig("Confidence_model_TF.jpg")
-
-'''
-
-
-
-
-####################################################################################################################################
-
 # Calcolo delle predizioni e accuratezza dei modelli
 metric        = CMetricAccuracy()
 models_preds  = [clf.predict(ts.X) for clf in models]
@@ -396,6 +335,7 @@ for idx in range(len(model_names)):
     print(f"Model name: {model_names[idx]:<40} - Model accuracy under attack: {(accuracy * 100):.2f} %")
 print("-" * 90)
 
+#############################################################################################
 
 import numpy as np
 from secml.figure import CFigure
@@ -548,13 +488,89 @@ for model_id in range(len(models)):
         fig.savefig(f"Explainability_model_{model_names[model_id]}.jpg")
 
 
+#############################################################################################################
+import os
+import pickle
 
+results_file_confidence = 'results_FNM_CONFIDENCE.pkl'
+num_samples_to_process = 5  # Numero di samples da processare
 
-####################################################################################################################################################
+# Controlla se il file esiste
+if os.path.exists(results_file_confidence):
+    print(f"Il file '{results_file_confidence}' esiste già. Caricamento dei risultati salvati...")
+    try:
+        with open(results_file_confidence, 'rb') as f:
+            CONFIDENCE_results_FNM = pickle.load(f)
+            if isinstance(CONFIDENCE_results_FNM, list) and all(isinstance(r, list) for r in CONFIDENCE_results_FNM):
+                print("Risultati caricati correttamente.")
+            else:
+                print("Attenzione: il formato dei dati caricati non è quello previsto.")
+    except Exception as e:
+        print(f"Errore durante il caricamento: {e}")
+else:
+    print(f"Il file '{results_file_confidence}' non esiste. Generando nuovi risultati...")
+    CONFIDENCE_results_FNM = []
+    
+    for sample_id in range(num_samples_to_process):
+        sample = ts.X[sample_id, :].atleast_2d()
+        label = CArray(ts.Y[sample_id])
+        sample_results = []
+        
+        for idx, model in enumerate(models):
+            print(f"Analizzando il campione {sample_id} con il modello \"{model_names[idx]}\"...")
+            attack_result = FNM_attack(
+                samples=sample,
+                labels=label,
+                model=model,
+                explainer_class=CExplainerIntegratedGradients,
+                num_classes=len(dataset_labels)
+            )
+            sample_results.append({
+                'model_name': model_names[idx],
+                'sample_id': sample_id,
+                'result': attack_result
+            })
+        CONFIDENCE_results_FNM.append(sample_results)
+        print(f"Attacco completato per il campione {sample_id}.")
 
+    try:
+        with open(results_file_confidence, 'wb') as f:
+            pickle.dump(CONFIDENCE_results_FNM, f)
+            print(f"Risultati salvati nel file '{results_file_confidence}'.")
+    except Exception as e:
+        print(f"Errore durante il salvataggio dei risultati: {e}")
 
+# Verifica il numero di modelli e la struttura dei dati
+print(f"Numero di modelli salvati: {len(CONFIDENCE_results_FNM)}")
+print(f"Chiavi disponibili nei risultati: {CONFIDENCE_results_FNM[0][0].keys()}")
 
+# Creazione della figura per i primi 5 campioni
+for sample_id in range(num_samples_to_process):
+    fig = CFigure(width=30, height=4, fontsize=10, linewidth=2)
+    label_true = ts.Y[sample_id].item()
 
+    for model_id in range(5):
+        attack_result = CONFIDENCE_results_FNM[sample_id][model_id]['result']
+        x_seq = attack_result['x_seq']
+        n_iter = x_seq.shape[0]
+        itrs = CArray.arange(n_iter)
 
+        scores = models[model_id].predict(x_seq, return_decision_function=True)[1]
+        scores = CSoftmax().softmax(scores)
 
-'''
+        fig.subplot(1, 5, model_id + 1)
+        if model_id == 0:
+            fig.sp.ylabel('Confidence')
+        fig.sp.xlabel('Iteration')
+
+        label_adv = attack_result['y_pred_adv'][0].item()
+
+        fig.sp.plot(itrs, scores[:, label_true], linestyle='--', c='black')
+        fig.sp.plot(itrs, scores[:, label_adv], c='black')
+        fig.sp.xlim(top=25, bottom=0)
+
+        fig.sp.title(f"Confidence Sample {sample_id+1} - Model: {model_id+1}")
+        fig.sp.legend(['Confidence True Class', 'Confidence Adv. Class'])
+
+    fig.tight_layout()
+    fig.savefig(f"Confidence_Sample_{sample_id+1}.jpg")
