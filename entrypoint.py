@@ -14,7 +14,7 @@ from secml.ml.features.normalization import CNormalizerMinMax
 from secml.explanation import CExplainerIntegratedGradients
 from secml.figure import CFigure
 import foolbox as fb
-
+from misc import logo
 
 
 print(f"RobustBench version: {robustbench.__name__}")
@@ -175,7 +175,7 @@ def load_results(file_path):
             print(f"Errore nel caricamento di '{file_path}': {e}")
     return []
 
-results_FNM = load_results('results_FNM.pkl')
+results_FNM = load_results('extracted_data/data_attack_result_FNM.pkl')
 if not results_FNM:
     results_FNM = []
     for model, name in zip(models, model_names):
@@ -183,7 +183,7 @@ if not results_FNM:
         attack_result = FNM_attack(ts.X, ts.Y, model, CExplainerIntegratedGradients, len(dataset_labels))
         results_FNM.append({'model_name': name, 'result': attack_result})
 
-    with open('results_FNM.pkl', 'wb') as f:
+    with open('extracted_data/data_attack_result_FNM.pkl', 'wb') as f:
         pickle.dump(results_FNM, f)
 
 
@@ -194,7 +194,7 @@ if not results_FNM:
 
 # files.download('attack_data.bin')
 
-with open('results_FNM.pkl', 'rb') as file:
+with open('extracted_data/data_attack_result_FNM.pkl', 'rb') as file:
     attack_data = pickle.load(file)
 
 
@@ -305,7 +305,7 @@ for model_id in range(len(models)):
         if (distances[idx] < epsilon and y_adv[idx] != ts.Y[idx])
     ]
 
-    print(f"\nCampioni selezionati per il modello {model_names[model_id]}: {len(selected_indices)}")
+    print(f"Campioni selezionati per il modello {model_names[model_id]}: {len(selected_indices)}")
 
     valid_indices = []  # Per salvare i campioni validi
     for idx in selected_indices:
@@ -321,7 +321,7 @@ for model_id in range(len(models)):
         if len(valid_indices) == 3:
             break
 
-    print(f"\nCampioni validi per il modello {model_names[model_id]}: {len(valid_indices)}")
+    print(f"Campioni validi per il modello {model_names[model_id]}: {len(valid_indices)}")
 
     if len(valid_indices) > 0:
         # Crea una nuova figura per i campioni selezionati
@@ -356,13 +356,13 @@ for model_id in range(len(models)):
 
         # Completa e salva la figura per i campioni selezionati
         fig.tight_layout(rect=[0, 0.003, 1, 0.94])
-        fig.savefig(f"Explainability_model_{model_names[model_id]}.jpg")
+        fig.savefig(f"results/Explainability_model_{model_names[model_id]}.jpg")
 
 
 #############################################################################################################
 
 
-results_file_confidence = 'results_FNM_CONFIDENCE.pkl'
+results_file_confidence = 'extracted_data/data_attack_result_FNM_CONFIDENCE.pkl'
 num_samples_to_process = 5  # Numero di samples da processare
 
 # Controlla se il file esiste
@@ -410,9 +410,8 @@ else:
     except Exception as e:
         print(f"Errore durante il salvataggio dei risultati: {e}")
 
-# Verifica il numero di modelli e la struttura dei dati
-print(f"Numero di modelli salvati: {len(CONFIDENCE_results_FNM)}")
-print(f"Chiavi disponibili nei risultati: {CONFIDENCE_results_FNM[0][0].keys()}")
+
+
 
 # Creazione della figura per i primi 5 campioni
 for sample_id in range(num_samples_to_process):
@@ -443,4 +442,4 @@ for sample_id in range(num_samples_to_process):
         fig.sp.legend(['Confidence True Class', 'Confidence Adv. Class'])
 
     fig.tight_layout()
-    fig.savefig(f"Confidence_Sample_{sample_id+1}.jpg")
+    fig.savefig(f"results/Confidence_Sample_{sample_id+1}.jpg")
