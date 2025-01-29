@@ -362,7 +362,7 @@ def show_image(fig, local_idx, img, img_adv, expl, label, pred):
     """
     Mostra l'immagine originale, avversa, perturbazione e spiegazione.
     """
-    fsize=22
+    fsize=28
     # Calcolo della perturbazione
     diff_img = img_adv - img
     diff_img -= diff_img.min()
