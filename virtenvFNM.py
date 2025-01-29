@@ -317,6 +317,68 @@ with open('results_FNM.pkl', 'rb') as file:
 
 
 
+
+
+
+
+################################################################################################
+"""            'model_name': model_names[idx],
+            'result': attack_result
+                        'x_seq': x_seq,
+            'y_pred_adv': y_pred,
+            'adv_ds': adv_ds,
+            'attributions': attributions if explainer_class else None,
+            'confidence': scores,
+            'iterations': itrs
+            """
+
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Scegli un campione specifico
+sample_id = 2
+model_id = 0  # Scegli il modello da analizzare
+
+# Recupera i dati dell'attacco
+attack_result = attack_data[model_id]['result']
+
+# Confidence per tutte le iterazioni e classi
+iterations = attack_result['iterations'].tondarray()
+confidence_scores = attack_result['confidence'].tondarray()
+
+print
+
+# Classe reale e classe avversaria (convertite correttamente)
+true_class = int(ts.Y[sample_id].item())  # Classe reale del campione
+adv_class = int(attack_result['y_pred_adv'][sample_id].item())  # Classe predetta dopo attacco
+
+# Confidence nel tempo per la classe reale e avversaria
+confidence_true = confidence_scores[:, true_class]
+confidence_adv = confidence_scores[:, adv_class]
+
+# Plot dell'evoluzione della confidence
+plt.figure(figsize=(10, 6))
+plt.plot(iterations, confidence_true, label=f"Confidence Real Class ({true_class})", linestyle='dashed')
+plt.plot(iterations, confidence_adv, label=f"Confidence Adversarial Class ({adv_class})", linestyle='solid')
+
+plt.xlabel("Iterations")
+plt.ylabel("Confidence Score")
+plt.title(f"Confidence Evolution - Sample {sample_id} (Model: {attack_data[model_id]['model_name']})")
+plt.legend()
+plt.grid()
+
+
+plt.savefig("Confidence_model_TF.jpg")
+
+'''
+
+
+
+
+####################################################################################################################################
+
 # Calcolo delle predizioni e accuratezza dei modelli
 metric        = CMetricAccuracy()
 models_preds  = [clf.predict(ts.X) for clf in models]
@@ -333,164 +395,6 @@ for idx in range(len(model_names)):
     )
     print(f"Model name: {model_names[idx]:<40} - Model accuracy under attack: {(accuracy * 100):.2f} %")
 print("-" * 90)
-
-
-
-
-
-################################################################################################
-
-import matplotlib.pyplot as plt
-import numpy as np
-
-# Seleziona il campione da attaccare
-sample_id = 2
-sample = ts.X[sample_id, :]
-label = ts.Y[sample_id].item()  # Converti in int
-
-# Lista dei nomi dei modelli
-model_names = ['Ding2020MMA', 'Wong2020Fast', 'Andriushchenko2020Understanding',
-               'Sitawarin2020Improving', 'Cui2023Decoupled_WRN-28-10']
-
-# Crea il grafico
-fig, axs = plt.subplots(1, 5, figsize=(30, 4))
-
-for model_id, model_name in enumerate(model_names):
-    # ✅ Trova i dati del modello corretto in attack_data
-    model_data = next((m for m in attack_data if m['model_name'] == model_name), None)
-
-    if model_data is None:
-        print(f"⚠️ Errore: il modello {model_name} non è presente in attack_data!")
-        continue
-
-    n_iter = model_data['result']['x_seq'].shape[0]
-    itrs = np.arange(n_iter)
-
-    # Predizione di tutti i punti nel percorso di attacco
-    scores = models[model_id].predict(
-        model_data['result']['x_seq'],
-        return_decision_function=True
-    )[1].tondarray()  # Converte CArray in numpy array
-
-    # Applica softmax ai punteggi per ottenere valori in [0,1]
-    scores = np.exp(scores - np.max(scores, axis=1, keepdims=True))
-    scores /= np.sum(scores, axis=1, keepdims=True)
-
-    axs[model_id].set_xlabel('Iteration')
-    if model_id == 0:
-        axs[model_id].set_ylabel('Confidence')
-
-    # ✅ Correggi l'accesso a `y_pred_adv`
-    y_pred_adv = model_data['result']['y_pred_adv']
-    if isinstance(y_pred_adv, CArray):
-        y_pred_adv = y_pred_adv.tondarray()
-    y_pred_adv = y_pred_adv[sample_id]  # Assicura che stai prendendo il valore giusto
-
-    # Tracciare le confidence
-    axs[model_id].plot(itrs, scores[:, label], linestyle='--', c='black', label='Confidence True Class')
-    axs[model_id].plot(itrs, scores[:, y_pred_adv], c='red', label='Confidence Adv. Class')
-
-    axs[model_id].set_xlim(0, 25)
-    axs[model_id].set_title(f"Confidence Sample {sample_id + 1} - Model: {model_name}")
-    axs[model_id].legend()
-
-plt.tight_layout()
-fig.savefig(f"Confidence_model_PROVA.jpg")
-
-
-
-'''
- 
- 
- print ('attack_data', attack_data)
- 
- attack_data= { 'model_name': model_names',
-            'result': { attack_result
-            'x_seq': x_seq,
-            'y_pred_adv': y_pred,
-            'adv_ds': adv_ds,
-            'attributions': attributions if explainer_class else None,
-            'confidence': scores,
-            'iterations': itrs}
-        }
-
-
-sample_id = 2
-sample    = ts.X[sample_id, :]
-label     = ts.Y[sample_id]
-
-# Assicurati che attack_data sia stato caricato correttamente
-if not isinstance(attack_data, list) or len(attack_data) == 0:
-    raise ValueError("Errore: attack_data non è stato caricato correttamente.")
-
-
-# Seleziona il dizionario corretto dai risultati dell'attacco
-selected_attack_data = attack_data[0]['result']  # Dove `idx` è l'indice del modello
-
-print(f"Tipo di attack_data: {type(attack_data)}")
-print(f"Lunghezza di attack_data: {len(attack_data)}")
-print(f"Esempio di attacco: {attack_data[0] if len(attack_data) > 0 else 'Nessun dato'}")
-
-print("Dati dell'attacco per il modello selezionato:")
-print('attack_data[0]',attack_data[0])
-
-
-
-
-fig = CFigure(width=30, height=4, fontsize=10, linewidth=2)
-
-for model_id in range(5):
-    n_iter = attack_data[model_id]['result']['x_seq'].shape[0]
-
-    itrs = CArray.arange(n_iter)
-
-    # Classify all the points in the attack path
-    scores = models[model_id].predict(
-        attack_data[model_id]['result']['x_seq'],
-        return_decision_function=True
-    )[1]
-
-    # Apply the softmax to the score to have value in [0,1]
-    scores = CSoftmax().softmax(scores)
-
-    fig.subplot(1, 5, model_id+1)
-
-    if model_id == 0:
-        fig.sp.ylabel('confidence')
-
-    fig.sp.xlabel('iteration')
-
-    fig.sp.plot(itrs, scores[:, label], linestyle='--', c='black')
-
-
-    y_pred_adv = attack_data[0]['result'].get('y_pred_adv', None)
-    print(
-        f"y_pred_adv: {y_pred_adv}, type: {type(y_pred_adv)}, shape: {y_pred_adv.shape if y_pred_adv is not None else 'None'}")
-
-    if y_pred_adv is None or y_pred_adv.shape[0] == 0:
-        raise ValueError("Errore: 'y_pred_adv' è vuoto o nullo.")
-
-    fig.sp.plot(itrs, scores[:, y_pred_adv[0]], c='black')
-
-
-    fig.sp.xlim(top=25, bottom=0)
-
-    fig.sp.title(f"Confidence Sample {sample_id+1} - Model: {model_id+1}")
-    fig.sp.legend(['Confidence True Class', 'Confidence Adv. Class'])
-
-fig.tight_layout()
-fig.savefig(f"Confidence_model_PROVA.jpg")
-fig.show()
-
-
-
-
-
-FUNZIONA CORRETTAMENTE QUESTA PARTE
-
-
-
-####################################################################################################################################
 
 
 import numpy as np
