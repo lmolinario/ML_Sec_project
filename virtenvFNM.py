@@ -362,6 +362,7 @@ def show_image(fig, local_idx, img, img_adv, expl, label, pred):
     """
     Mostra l'immagine originale, avversa, perturbazione e spiegazione.
     """
+    fsize=22
     # Calcolo della perturbazione
     diff_img = img_adv - img
     diff_img -= diff_img.min()
@@ -372,21 +373,21 @@ def show_image(fig, local_idx, img, img_adv, expl, label, pred):
 
     # Immagine originale
     fig.sp.imshow(convert_image(img))
-    fig.sp.title(f"True: {label}")
+    fig.sp.title(f"True: {label}", fontsize=fsize)
     fig.sp.xticks([])
     fig.sp.yticks([])
 
     # Immagine avversa
     fig.subplot(3, 4, local_idx + 2)
     fig.sp.imshow(convert_image(img_adv))
-    fig.sp.title(f'Adv: {pred}')
+    fig.sp.title(f'Adv: {pred}', fontsize=fsize)
     fig.sp.xticks([])
     fig.sp.yticks([])
 
     # Perturbazione
     fig.subplot(3, 4, local_idx + 3)
     fig.sp.imshow(convert_image(diff_img))
-    fig.sp.title('Perturbation')
+    fig.sp.title('Perturbation', fontsize=fsize)
     fig.sp.xticks([])
     fig.sp.yticks([])
 
@@ -399,7 +400,7 @@ def show_image(fig, local_idx, img, img_adv, expl, label, pred):
 
     fig.subplot(3, 4, local_idx + 4)
     fig.sp.imshow(expl, cmap='seismic')
-    fig.sp.title('Explain')
+    fig.sp.title('Explain', fontsize=fsize)
     fig.sp.xticks([])
     fig.sp.yticks([])
 
@@ -451,15 +452,13 @@ for model_id in range(len(models)):
 
     print(f"\nCampioni validi per il modello {model_names[model_id]}: {len(valid_indices)}")
 
-
     if len(valid_indices) > 0:
         # Crea una nuova figura per i campioni selezionati
         n_rows = len(valid_indices)  # Una riga per ogni campione
-        fig = CFigure(height=n_rows * 6, width=18, fontsize=16)
+        fig = CFigure(height=n_rows * 6, width=18)
 
-        # Aggiungi manualmente il titolo sopra la figura
-        fig.text(0.5, 1.02, f"Explainability for Model: {model_names[model_id]}", fontsize=20, weight='bold',
-                 ha='center')
+        # Aggiungi manualmente il titolo sopra la figura accedendo alla figura Matplotlib interna
+        fig.title(f"Explainability for Model: {model_names[model_id]}", fontsize=32)
 
         for ydx, idx in enumerate(valid_indices):
             img = original_images[idx]
@@ -486,7 +485,7 @@ for model_id in range(len(models)):
 
         # Completa e salva la figura per i campioni selezionati
         fig.tight_layout(rect=[0, 0.003, 1, 0.94])
-        fig.savefig(f"filtered_explainability_model_{model_names[model_id]}_valid.jpg")
+        fig.savefig(f"Explainability_model_{model_names[model_id]}.jpg")
         fig.show()
 
 """
