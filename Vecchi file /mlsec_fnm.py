@@ -237,7 +237,7 @@ for idx, model in enumerate(models):
 
 
 
-results_file = 'results_FNM.pkl'
+results_file = '../results_FNM.pkl'
 
 # Controlla se il file esiste
 if os.path.exists(results_file):
