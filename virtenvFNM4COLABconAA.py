@@ -275,6 +275,24 @@ if __name__ == "__main__":
 
 
 
+##############################################################################################################
+
+    from robustbench.utils import load_model
+    from robustbench.eval import benchmark
+
+    # Carica un modello dal Model Zoo di RobustBench
+    model = load_model(model_name='Wong2020Fast', dataset='cifar10', threat_model='Linf')
+
+    # Valuta la robustezza del modello utilizzando AutoAttack specificando eps
+    eps = 8 / 255  # Imposta il valore di epsilon (corrispondente al tuo setup)
+    clean_acc, robust_acc = benchmark(model, dataset='cifar10', threat_model='Linf', eps=eps)
+
+    print(f"Accuratezza su dati puliti: {clean_acc * 100:.2f}%")
+    print(f"Accuratezza sotto attacco AutoAttack: {robust_acc * 100:.2f}%")
+
+ ##############################################################################################################
+
+
     """##Saves or loads  attack data on the disk"""
     for idx, model in enumerate(models):
         if not isinstance(model, CClassifierPyTorch):
