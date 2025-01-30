@@ -277,20 +277,89 @@ if __name__ == "__main__":
 
 ##############################################################################################################
 
+    import pickle
+    import os
+    import foolbox as fb
+    import torch
     from robustbench.utils import load_model
-    from robustbench.eval import benchmark
+    from secml.array import CArray
+    from secml.ml.peval.metrics import CMetricAccuracy
+    from secml.data.loader import CDataLoaderCIFAR10
+    from secml.ml.features.normalization import CNormalizerMinMax
 
-    # Carica un modello dal Model Zoo di RobustBench
-    model = load_model(model_name='Wong2020Fast', dataset='cifar10', threat_model='Linf')
+    # Configurazioni
+    input_shape = (3, 32, 32)
+    model_names = [
+        "Ding2020MMA",
+        "Wong2020Fast",
+        "Andriushchenko2020Understanding",
+        "Sitawarin2020Improving",
+        "Cui2023Decoupled_WRN-28-10"
+    ]
+    n_samples = 64
+    epsilon = 8 / 255  # Limite di perturbazione per AutoAttack
 
-    # Valuta la robustezza del modello utilizzando AutoAttack specificando eps
-    eps = 8 / 255  # Imposta il valore di epsilon (corrispondente al tuo setup)
-    clean_acc, robust_acc = benchmark(model, dataset='cifar10', threat_model='Linf', eps=eps)
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    print(f"Using device: {device}")
 
-    print(f"Accuratezza su dati puliti: {clean_acc * 100:.2f}%")
-    print(f"Accuratezza sotto attacco AutoAttack: {robust_acc * 100:.2f}%")
+    # Percorso del file per salvare i risultati
+    results_file = "accuracies_autoattack.pkl"
 
- ##############################################################################################################
+    # Verifica se il file esiste
+    if os.path.exists(results_file):
+        with open(results_file, "rb") as f:
+            accuracies_autoattack = pickle.load(f)
+        print("Dati di AutoAttack caricati da file.")
+    else:
+        accuracies_autoattack = {}
+
+        # Caricare CIFAR-10 (64 campioni)
+        tr, ts = CDataLoaderCIFAR10().load()
+
+        # Normalizzazione
+        normalizer = CNormalizerMinMax().fit(tr.X)
+        ts_original = ts.deepcopy()  # Backup prima della normalizzazione
+        ts.X = normalizer.transform(ts.X)
+
+        # Ridurre a 64 campioni e reshaping
+        ts = ts[:n_samples, :]
+        ts.X = CArray(ts.X.tondarray().reshape(-1, *input_shape))
+
+        # Convertire in Tensor e assicurare la forma corretta per PyTorch
+        x_test = torch.tensor(ts.X.tondarray(), dtype=torch.float32).to(device)
+        print(f"Forma originale di x_test: {x_test.shape}")
+
+        # Se ha solo due dimensioni (batch_size, features), risagomare
+        if x_test.dim() == 2:
+            x_test = x_test.view(n_samples, 3, 32, 32)  # Convertire in (batch, C, H, W)
+        print(f"Forma corretta di x_test: {x_test.shape}")
+
+        y_test = torch.tensor(ts.Y.tondarray(), dtype=torch.long).to(device)
+
+        # Inizializzare la metrica
+        metric = CMetricAccuracy()
+
+        # Caricare tutti i modelli e attaccarli con PGD
+        for model_name in model_names:
+            model = load_model(model_name=model_name, dataset="cifar10", threat_model="Linf").to(device)
+            fmodel = fb.PyTorchModel(model, bounds=(0, 1))
+            _, advs, success = fb.attacks.LinfPGD()(fmodel, x_test, y_test, epsilons=[epsilon])
+            robust_acc = 1 - success.float().mean().item()
+            accuracies_autoattack[model_name] = robust_acc
+
+        # Salvare i risultati nel file
+        with open(results_file, "wb") as f:
+            pickle.dump(accuracies_autoattack, f)
+        print("Dati di AutoAttack calcolati e salvati su file.")
+
+    # Stampa delle accuratezze
+    print("-" * 90)
+    for model_name, acc in accuracies_autoattack.items():
+        print(f"Model name: {model_name:<40} - AutoAttack accuracy: {(acc * 100):.2f} %")
+    print("-" * 90)
+
+
+    ##############################################################################################################
 
 
     """##Saves or loads  attack data on the disk"""
