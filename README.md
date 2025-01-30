@@ -58,6 +58,18 @@ This project is developed for the UNICA.IT University Machine Learning Security 
 ## Project goal
 The goal of this project is to re-evaluate 5 RobustBench models using another attack algorithm (e.g., FMN) and identify samples for which one attack succeeds while the other fails. In other words, we aim to compare the effectiveness of different attacks against robust models, to analyze in which cases one type of attack is effective while another fails, thus contributing to a deeper understanding of the robustness of models and attack algorithms.
 
+rivalutare i modelli qui intende considerare come baseline i risultati di autoattack - robustbench
+e confrontarli con quello di un altro attacco
+va bene SDF o FMN, o anche se vuole tutti e 2
+il punto però è che dovrebbe usare la Robust Accuracy calcolata sullo stesso epsilon di autoattack (normalmente 8/255 se usa L-inf)
+quindi in pratica se usa un min-distance come SDF o FMN, deve contare quanti sample bucano con distanza < 8/255
+e per SDF va verificato che i pixel pure siano in [0,1] alla fine
+mi pare che fosse pure buggato il codice
+
+tutto chiaro?
+B.
+
+
 ## Solution Design
 #### Attack algorithm
 As indicated in our project I took as a reference the FMN attack, also known as FGSM (Fast Gradient Sign Method), which is one of the most common attacks against neural networks.
