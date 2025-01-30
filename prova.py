@@ -52,7 +52,7 @@ def attack_fmn(model, x_test, y_test, eps=8 / 255):
     attack = fb.attacks.LInfFMNAttack()
     perturbations, advs, success = attack(fmodel, x_test.to(device), y_test.to(device), epsilons=[eps])
 
-    return advs.cpu().numpy(), perturbations.cpu().numpy(), success.cpu().numpy()
+    return advs, perturbations, success
 
 
 
@@ -63,7 +63,7 @@ def attack_pgd(model, x_test, y_test, eps=8 / 255):
     attack = fb.attacks.LinfPGD()
     perturbations, advs, success = attack(fmodel, x_test.to(device), y_test.to(device), epsilons=[eps])
 
-    return advs.cpu().numpy(), perturbations.cpu().numpy(), success.cpu().numpy()
+    return advs, perturbations, success
 
 
 
