@@ -51,6 +51,11 @@ def attack_fmn(model, x_test, y_test, eps=8 / 255):
     fmodel = fb.PyTorchModel(model, bounds=(0, 1))
     attack = fb.attacks.LInfFMNAttack()
     perturbations, advs, success = attack(fmodel, x_test.to(device), y_test.to(device), epsilons=[eps])
+    # Se `perturbations` è una lista di tensori, convertila in un unico tensore PyTorch
+    if isinstance(perturbations, list):
+        perturbations = torch.stack(perturbations)  # Converte la lista in un tensore
+
+    print(f"FMN Perturbation Stats - Min: {perturbations.min().item()}, Max: {perturbations.max().item()}, Mean: {perturbations.mean().item()}")
 
     return advs, perturbations, success
 
@@ -109,31 +114,61 @@ else:
     # Attacchi adversarial e salvataggio risultati
     results = {}
 
+
     for name, model in models.items():
         # Eseguire gli attacchi
         advs_fmn, perturbations_fmn, success_fmn = attack_fmn(model, x_test, y_test)
         advs_pgd, perturbations_pgd, success_pgd = attack_pgd(model, x_test, y_test)
 
-        # Identificare i campioni discordanti
-        fmn_only = np.where(success_fmn & ~success_pgd)[0]  # FMN funziona ma PGD no
-        pgd_only = np.where(success_pgd & ~success_fmn)[0]  # PGD funziona ma FMN no
+        print(f"Type of perturbations_fmn: {type(perturbations_fmn)}")
+        print(f"Shape of perturbations_fmn: {perturbations_fmn.shape if isinstance(perturbations_fmn, torch.Tensor) else 'List of tensors'}")
 
-        print(f"Model: {name:<40} - Success FMN: {success_fmn.mean():.1%} - Success PGD: {success_pgd.mean():.1%}")
+        # Converti perturbazioni in array NumPy
+        if isinstance(perturbations_fmn, list):  
+            perturbations_fmn_np = np.array([p.cpu().numpy() for p in perturbations_fmn])
+        else:
+            perturbations_fmn_np = perturbations_fmn.cpu().numpy()  
+
+        print(f"Model: {name} - Min Perturbation: {perturbations_fmn_np.min()} - Max Perturbation: {perturbations_fmn_np.max()}")
+        print(f"Shape perturbations_fmn: {perturbations_fmn_np.shape}")
+
+        # Conta solo i campioni in cui la distanza è < 8/255 (media sui pixel)
+        valid_fmn_success = (perturbations_fmn_np.max(axis=(2, 3, 4)) < (8 / 255)).squeeze(0)
+
+        if valid_fmn_success.shape[0] == 1:
+            valid_fmn_success = valid_fmn_success.squeeze(0)
+        valid_fmn_success = valid_fmn_success < (8 / 255)
+
+        # Converti successi PGD in array compatibile
+        success_pgd_np = success_pgd.cpu().numpy().squeeze()
+
+        # Identificare i campioni discordanti
+        fmn_only = np.where(valid_fmn_success & ~success_pgd_np)[0]  
+        pgd_only = np.where(success_pgd_np & ~valid_fmn_success)[0]  
+
+        # Calcolo medie corrette
+        success_fmn_mean = success_fmn.cpu().numpy().mean()  
+        success_pgd_mean = success_pgd.cpu().numpy().mean()
+
+        print(f"Model: {name:<40} - Success FMN: {success_fmn_mean:.1%} - Success PGD: {success_pgd_mean:.1%}")
+        print(f" - FMN ha successo con distanza < 8/255: {valid_fmn_success.mean():.1%}")
         print(f" - FMN ha successo ma PGD no: {len(fmn_only)} campioni")
         print(f" - PGD ha successo ma FMN no: {len(pgd_only)} campioni")
 
-        # Salvataggio risultati
+        # **Salvataggio risultati**
         results[name] = {
             "clean": clean_accuracies[name],
-            "success_fmn": success_fmn.mean(),  # Percentuale di successo FMN
-            "success_pgd": success_pgd.mean(),  # Percentuale di successo PGD
+            "success_fmn": success_fmn_mean,
+            "success_pgd": success_pgd_mean,
+            "valid_fmn_success": valid_fmn_success.mean(),
             "fmn_only_indices": fmn_only.tolist(),
             "pgd_only_indices": pgd_only.tolist(),
-            "advs_fmn": advs_fmn,  # Tutti gli adv FMN
-            "advs_pgd": advs_pgd,  # Tutti gli adv PGD
-            "perturbations_fmn": perturbations_fmn,  # Tutte le perturbazioni FMN
-            "perturbations_pgd": perturbations_pgd,  # Tutte le perturbazioni PGD
+            "advs_fmn": advs_fmn.cpu().numpy() if isinstance(advs_fmn, torch.Tensor) else np.array([a.cpu().numpy() for a in advs_fmn]),
+            "advs_pgd": advs_pgd.cpu().numpy() if isinstance(advs_pgd, torch.Tensor) else np.array([a.cpu().numpy() for a in advs_pgd]),
+            "perturbations_fmn": perturbations_fmn_np,
+            "perturbations_pgd": np.array([p.cpu().numpy() for p in perturbations_pgd]),  # ✅ CORRETTO
         }
+
 
     # Salvataggio in un file pickle per analisi successive
     with open(results_file, "wb") as f:
