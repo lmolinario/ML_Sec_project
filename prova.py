@@ -31,6 +31,45 @@ def plot_results(models_names, clean_acc, robust_acc_fmn, robust_acc_pgd):
 	print("\nGrafico delle accuratezze salvato come 'comparison_accuracy.png'.")
 
 
+# Attacchi
+def attack_fmn(model, x_test, y_test, eps=8 / 255):
+	fmodel = fb.PyTorchModel(model, bounds=(0, 1))
+	attack = fb.attacks.LInfFMNAttack()
+	perturbations, advs, success = attack(fmodel, x_test.to(device), y_test.to(device), epsilons=[eps])
+
+	if isinstance(perturbations, list):
+		perturbations = torch.stack(perturbations)
+
+	# 🔥 Clippare le perturbazioni per assicurarsi che siano <= eps=8/255
+	perturbations = torch.clamp(perturbations, 0, eps)
+
+	print(
+		f"FMN Perturbation Stats - Min: {perturbations.min().item()}, Max: {perturbations.max().item()}, Mean: {perturbations.mean().item()}")
+
+	return advs, perturbations, success
+
+
+def attack_pgd(model, x_test, y_test, eps=8 / 255):
+	fmodel = fb.PyTorchModel(model, bounds=(0, 1))
+	attack = fb.attacks.LinfPGD()
+	perturbations, advs, success = attack(fmodel, x_test.to(device), y_test.to(device), epsilons=[eps])
+	return advs, perturbations, success
+
+
+def compute_clean_accuracy(models, x_test, y_test):
+	accuracies = {}
+	x_test_torch = x_test.to(device)
+	y_test_torch = y_test.to(device)
+
+	with torch.no_grad():
+		for name, model in models.items():
+			preds = model(x_test_torch).argmax(dim=1).cpu().numpy()
+			accuracy = (preds == y_test.cpu().numpy()).mean()
+			accuracies[name] = accuracy
+			print(f"Model: {name:<40} - Clean Accuracy: {accuracy * 100:.2f}%")
+
+	return accuracies
+
 # Se il file dei risultati esiste, caricalo e genera il plot
 if os.path.exists(results_file):
 	print("\nCaricamento risultati esistenti...")
@@ -84,46 +123,6 @@ model_names = [
 
 # Caricamento modelli RobustBench
 models = {name: load_model(name, dataset="cifar10", threat_model="Linf").to(device) for name in model_names}
-
-
-# Attacchi
-def attack_fmn(model, x_test, y_test, eps=8 / 255):
-	fmodel = fb.PyTorchModel(model, bounds=(0, 1))
-	attack = fb.attacks.LInfFMNAttack()
-	perturbations, advs, success = attack(fmodel, x_test.to(device), y_test.to(device), epsilons=[eps])
-
-	if isinstance(perturbations, list):
-		perturbations = torch.stack(perturbations)
-
-	# 🔥 Clippare le perturbazioni per assicurarsi che siano <= eps=8/255
-	perturbations = torch.clamp(perturbations, 0, eps)
-
-	print(
-		f"FMN Perturbation Stats - Min: {perturbations.min().item()}, Max: {perturbations.max().item()}, Mean: {perturbations.mean().item()}")
-
-	return advs, perturbations, success
-
-
-def attack_pgd(model, x_test, y_test, eps=8 / 255):
-	fmodel = fb.PyTorchModel(model, bounds=(0, 1))
-	attack = fb.attacks.LinfPGD()
-	perturbations, advs, success = attack(fmodel, x_test.to(device), y_test.to(device), epsilons=[eps])
-	return advs, perturbations, success
-
-
-def compute_clean_accuracy(models, x_test, y_test):
-	accuracies = {}
-	x_test_torch = x_test.to(device)
-	y_test_torch = y_test.to(device)
-
-	with torch.no_grad():
-		for name, model in models.items():
-			preds = model(x_test_torch).argmax(dim=1).cpu().numpy()
-			accuracy = (preds == y_test.cpu().numpy()).mean()
-			accuracies[name] = accuracy
-			print(f"Model: {name:<40} - Clean Accuracy: {accuracy * 100:.2f}%")
-
-	return accuracies
 
 
 # Calcolare l'accuratezza pulita PRIMA di eseguire gli attacchi
@@ -196,64 +195,4 @@ plot_results(models_names, clean_acc, robust_acc_fmn, robust_acc_pgd)
 
 print(f"\nRisultati salvati in {results_file}")
 
-import matplotlib.pyplot as plt
-import numpy as np
-import torch
-import pickle
-
-# Caricare i risultati dal file pickle
-results_file = "results_FMN_vs_PGD.pkl"
-
-# Caricare i dati salvati
-with open(results_file, "rb") as f:
-	results = pickle.load(f)
-
-# Numero di immagini da visualizzare
-num_samples = 3  # Puoi cambiare questo valore
-
-# Seleziona un modello (scegli uno tra quelli salvati)
-model_name = "Andriushchenko2020Understanding"  # Cambia il nome se vuoi un altro modello
-
-# Estrarre i dati necessari dal modello scelto
-perturbations_fmn = results[model_name]["perturbations_fmn"][:num_samples]
-advs_fmn = results[model_name]["advs_fmn"][:num_samples]
-x_test = results[model_name]["advs_fmn"][:num_samples] - results[model_name]["perturbations_fmn"][
-                                                         :num_samples]  # Ricostruisce l'originale
-y_test = ["cat", "ship", "frog"]  # Placeholder, sostituiscili con le vere etichette
-
-
-# Funzione per creare un heatmap della perturbazione
-def explainability_map(perturbation):
-	return np.abs(perturbation).sum(axis=0)  # Somma sui canali per ottenere una heatmap
-
-
-# Creazione del plot
-fig, axes = plt.subplots(num_samples, 4, figsize=(10, num_samples * 3))
-
-for i in range(num_samples):
-	# Immagine originale
-	axes[i, 0].imshow(np.transpose(x_test[i], (1, 2, 0)))
-	axes[i, 0].set_title(f"True: {y_test[i]}")
-	axes[i, 0].axis("off")
-
-	# Immagine avversariale
-	axes[i, 1].imshow(np.transpose(advs_fmn[i], (1, 2, 0)))
-	axes[i, 1].set_title(f"Adv: ???")  # Qui puoi mettere la predizione del modello
-	axes[i, 1].axis("off")
-
-	# Perturbazione
-	pert = np.transpose(perturbations_fmn[i], (1, 2, 0))
-	axes[i, 2].imshow(pert)
-	axes[i, 2].set_title("Perturbation")
-	axes[i, 2].axis("off")
-
-	# Explainability Map
-	exp_map = explainability_map(pert)
-	axes[i, 3].imshow(exp_map, cmap="jet")
-	axes[i, 3].set_title("Explain")
-	axes[i, 3].axis("off")
-
-plt.suptitle(f"Explainability for Model: {model_name}", fontsize=14)
-plt.tight_layout()
-plt.savefig('Explainability')
-
+i
