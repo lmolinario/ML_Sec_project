@@ -1,19 +1,22 @@
-import os
-import pickle
 import numpy as np
-
 import robustbench
 import secml
 from secml.adv.attacks.evasion import CAttackEvasionFoolbox
 from secml.ml import CClassifierPyTorch
-from secml.array import CArray
 from secml.ml.classifiers.loss import CSoftmax
-from secml.ml.peval.metrics import CMetricAccuracy
 from secml.data.loader import CDataLoaderCIFAR10
 from secml.ml.features.normalization import CNormalizerMinMax
 from secml.explanation import CExplainerIntegratedGradients
 from secml.figure import CFigure
 import foolbox as fb
+import torch
+import pickle
+import os
+from autoattack import AutoAttack
+from secml.ml.peval.metrics import CMetricAccuracy
+from secml.array import CArray
+
+
 
 print(f"RobustBench version: {robustbench.__name__}")
 print(f"SecML version: {secml.__version__}")
@@ -23,6 +26,11 @@ print(f"Numpy version: {np.__version__}")
 """## Global Variables
 Contains definition of global variables
 """
+
+# Percorso del file per salvare i risultati
+results_file_AA = "extracted_data/data_autoattack_results.pkl"
+results_file_FNM = 'extracted_data/data_attack_result_FNM.pkl'
+results_file_confidence = 'extracted_data/data_attack_result_FNM_CONFIDENCE.pkl'
 
 input_shape = (3, 32, 32)
 
@@ -116,6 +124,7 @@ def FNM_attack(samples, labels, model, explainer_class=None, num_classes=10):
 			'confidence': CSoftmax().softmax(model.predict(attack.x_seq, return_decision_function=True)[1]),
 			'iterations': CArray.arange(attack.x_seq.shape[0])
 		}
+
 
 	except Exception as e:
 		print(f"Errore durante l'attacco: {e}")
@@ -233,6 +242,8 @@ def generate_confidence_results(num_samples, models, model_names, dataset_labels
 				'result': attack_result
 			})
 
+
+
 		results.append(sample_results)
 		print(f"✅ Attacco completato per il campione {sample_id}.")
 
@@ -264,34 +275,36 @@ if __name__ == "__main__":
 	models_preds = [clf.predict(ts.X) for clf in models]
 	accuracies = [metric.performance_score(y_true=ts.Y, y_pred=y_pred) for y_pred in models_preds]
 
-	print("-" * 90)
-	# Stampa delle accuratezze
-	for idx in range(len(model_names)):
-		print(f"Model name: {model_names[idx]:<40} - Clean model accuracy: {(accuracies[idx] * 100):.2f} %")
-	print("-" * 90)
 
 	"""##Saves or loads  attack data on the disk"""
 	for idx, model in enumerate(models):
 		if not isinstance(model, CClassifierPyTorch):
 			print(f"Errore: Il modello {model_names[idx]} non è un'istanza di CClassifierPyTorch.")
 		else:
-			print(f"Il modello {model_names[idx]} è caricato correttamente come CClassifierPyTorch.")
+			print(f"Il modello {model_names[idx]} è stato caricato correttamente.")
 
-	# 📂 Percorso file
-	results_file = 'extracted_data/data_attack_result_FNM.pkl'
+
+	print("-" * 90)
+	# Stampa delle accuratezze
+	for idx in range(len(model_names)):
+		print(f"Model name: {model_names[idx]:<40} - Clean model accuracy: {(accuracies[idx] * 100):.2f} %")
+	print("-" * 90)
+
+
+
 
 	# 🔄 Caricamento o generazione dei risultati
-	results_FNM = load_results(results_file)
+	results_FNM = load_results(results_file_FNM)
 
 	if not results_FNM:  # Se il caricamento non ha avuto successo, genera i dati
-		print(f"⚠️ Il file '{results_file}' non esiste o è corrotto. Generando nuovi risultati...")
+		print(f"⚠️ Il file '{results_file_FNM}' non esiste o è corrotto. Generando nuovi risultati...")
 		results_FNM = [
 			{'model_name': name,
 			 'result': FNM_attack(ts.X, ts.Y, model, CExplainerIntegratedGradients, len(dataset_labels))}
 			for model, name in zip(models, model_names)
 		]
 
-		save_results(results_file, results_FNM)
+		save_results(results_file_FNM, results_FNM)
 
 	# Calcolo delle predizioni e accuratezza dei modelli
 	metric = CMetricAccuracy()
@@ -306,45 +319,18 @@ if __name__ == "__main__":
 			y_true=ts.Y,
 			y_pred=results_FNM[idx]['result']['y_pred_adv']
 		)
-		print(f"Model name: {model_names[idx]:<40} - Model accuracy under attack: {(accuracy * 100):.2f} %")
+		print(f"Model name: {model_names[idx]:<40} - accuracy under FNM attack: {(accuracy * 100):.2f} %")
 	print("-" * 90)
 
 	#############################################################################################
 
-	import torch
-	import pickle
-	import os
-	from autoattack import AutoAttack
-	from secml.ml.peval.metrics import CMetricAccuracy
-	from secml.array import CArray
-
-	# Percorso del file per salvare i risultati
-	results_file = "extracted_data/data_autoattack_results.pkl"
 
 
-	def save_results(file_path, data):
-		"""Salva i risultati in un file pickle."""
-		try:
-			with open(file_path, 'wb') as f:
-				pickle.dump(data, f)
-			print(f"✅ Risultati salvati in '{file_path}'.")
-		except Exception as e:
-			print(f"⚠️ Errore nel salvataggio: {e}")
 
-
-	def load_results(file_path):
-		"""Carica i risultati da un file pickle."""
-		if os.path.exists(file_path):
-			try:
-				with open(file_path, 'rb') as f:
-					return pickle.load(f)
-			except Exception as e:
-				print(f"⚠️ Errore nel caricamento: {e}")
-		return None  # Se il file non esiste o non è valido
 
 
 	# Caricare i risultati se esistono già
-	results_autoattack = load_results(results_file)
+	results_autoattack = load_results(results_file_AA)
 
 	if results_autoattack is None:  # Se i risultati non esistono, eseguire l'attacco
 		print("⚠️ Nessun file di risultati trovato. Eseguo AutoAttack...")
@@ -402,30 +388,22 @@ if __name__ == "__main__":
 			})
 
 			print(
-				f"✅ Attacco completato per {model_names[idx]} - Accuracy under attack: {(accuracy_under_attack * 100):.2f} %")
+				f"✅ Attacco completato per {model_names[idx]} - Accuracy under AA attack: {(accuracy_under_attack * 100):.2f} %")
 
 		# 🔄 Salva i risultati dopo l'esecuzione
-		save_results(results_file, results_autoattack)
+		save_results(results_file_AA, results_autoattack)
 
 	else:
-		print(f"✅ Risultati caricati da '{results_file}', salto l'esecuzione dell'attacco.")
+		print(f"✅ Risultati caricati da '{results_file_AA}', salto l'esecuzione dell'attacco.")
 
-	# Stampa delle accuratezze prima e dopo l'attacco
-	print("\n" + "-" * 90)
-	print("📊 Accuratezza dei modelli su dati puliti:")
-	for idx, name in enumerate(model_names):
-		accuracy_clean = metric.performance_score(y_true=ts.Y, y_pred=models[idx].predict(ts.X))
-		print(f"Model name: {name:<40} - Clean accuracy: {(accuracy_clean * 100):.2f} %")
-	print("-" * 90)
-
-	print("📉 Accuratezza dei modelli sotto attacco:")
+	print("📉 Accuratezza dei modelli sotto attacco AutoAttack:")
 	for result in results_autoattack:
 		print(
-			f"Model name: {result['model_name']:<40} - Accuracy under attack: {(result['accuracy_under_attack'] * 100):.2f} %")
+			f"Model name: {result['model_name']:<40} - Accuracy under AA attack: {(result['accuracy_under_attack'] * 100):.2f} %")
 	print("-" * 90)
 
 	#############################################################################################
-	print("Calcolo e plot della Explainability")
+	print("Calcolo della Explainability")
 	# Itera sui modelli
 	for model_id in range(len(models)):
 		print(f"\nVisualizzazione per il modello: {model_names[model_id]}")
@@ -447,7 +425,7 @@ if __name__ == "__main__":
 			if (distances[idx] < epsilon and y_adv[idx] != ts.Y[idx])
 		]
 
-		print(f"Campioni selezionati per il modello {model_names[model_id]}: {len(selected_indices)}")
+		print(f"Campioni validi per il modello {model_names[model_id]}: {len(selected_indices)}")
 
 		valid_indices = []  # Per salvare i campioni validi
 		for idx in selected_indices:
@@ -463,7 +441,7 @@ if __name__ == "__main__":
 			if len(valid_indices) == 3:
 				break
 
-		print(f"Campioni validi per il modello {model_names[model_id]}: {len(valid_indices)}")
+		print(f"Seleziono i primi {len(valid_indices)} per il plot dei samples relativi al modello {model_names[model_id]}: ")
 
 		if len(valid_indices) > 0:
 			# Crea una nuova figura per i campioni selezionati
@@ -504,7 +482,7 @@ if __name__ == "__main__":
 
 	print("Calcolo e plot della CONFIDENCE")
 	# 📂 Percorso file
-	results_file_confidence = 'extracted_data/data_attack_result_FNM_CONFIDENCE.pkl'
+
 	num_samples_to_process = 5  # Numero di campioni da processare
 
 	# 🔄 Caricamento o generazione dei risultati
@@ -519,7 +497,7 @@ if __name__ == "__main__":
 
 	# Creazione della figura per i primi 5 campioni
 	for sample_id in range(num_samples_to_process):
-		print(f"Calcolo e plot della CONFIDENCE : Sample n.{sample_id}")
+		print(f"Calcolo e plot della CONFIDENCE : Sample n.{sample_id+1}")
 		fig = CFigure(width=30, height=4, fontsize=10, linewidth=2)
 		label_true = ts.Y[sample_id].item()
 
@@ -543,8 +521,9 @@ if __name__ == "__main__":
 			fig.sp.plot(itrs, scores[:, label_adv], c='red')
 			fig.sp.xlim(top=25, bottom=0)
 
-			fig.sp.title(f"Confidence Sample {sample_id + 1} - Model: {model_id + 1}")
+			fig.sp.title(f"Confidence Sample {sample_id + 1} - Model: {model_names[model_id]}\n"
+			             f"True Label {label_true} and Adv Labe {label_adv}")
 			fig.sp.legend(['Confidence True Class', 'Confidence Adv. Class'])
-
+		print(f"Fine per Sample n.{sample_id+1}")
 		fig.tight_layout()
 		fig.savefig(f"results/Confidence_Sample_{sample_id + 1}.jpg")
