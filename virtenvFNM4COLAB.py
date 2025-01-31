@@ -400,7 +400,7 @@ if __name__ == "__main__":
     #############################################################################################################
 
 
-
+    print("Calcolo e plot della CONFIDENCE")
     # 📂 Percorso file
     results_file_confidence = 'extracted_data/data_attack_result_FNM_CONFIDENCE.pkl'
     num_samples_to_process = 5  # Numero di campioni da processare
