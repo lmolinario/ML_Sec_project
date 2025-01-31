@@ -100,6 +100,64 @@ def compute_explainability(explainer_class, model, adv_ds, num_classes):
 			attributions.append(attr)
 	return attributions
 
+def results_AA(samples, labels, models, model_names, explainer_class=None, num_classes=10):
+    """Esegue AutoAttack sui modelli dati e raccoglie spiegabilità, perturbazione e confidenza."""
+    try:
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        metric = CMetricAccuracy()
+
+        # Converti il dataset in tensori PyTorch per AutoAttack
+        x_test_torch = torch.tensor(samples.tondarray(), dtype=torch.float32).to(device)
+        y_test_torch = torch.tensor(labels.tondarray(), dtype=torch.long).to(device)
+
+        # Assicurarsi che x_test_torch abbia il formato corretto [batch, channels, height, width]
+        if len(x_test_torch.shape) == 2:
+            x_test_torch = x_test_torch.view(-1, *input_shape)
+
+        for idx, model in enumerate(models):
+            try:
+                print(f"\n🔍 Esecuzione AutoAttack su: {model_names[idx]}")
+
+                # Estrai il modello PyTorch nativo da CClassifierPyTorch
+                pytorch_model = model.model.to(device)
+                pytorch_model.eval()
+
+                # Creazione dell'attaccante AutoAttack
+                adversary = AutoAttack(pytorch_model, norm='Linf', eps=8 / 255)
+                adversary.apgd.n_restarts = 1
+
+                # Esecuzione dell'attacco
+                x_adv_torch = adversary.run_standard_evaluation(x_test_torch, y_test_torch)
+
+                # Conversione dei dati avversari da PyTorch Tensor a SecML CArray
+                x_adv = CArray(x_adv_torch.cpu().detach().numpy())
+
+                # Predizioni dopo l'attacco
+                y_pred_adv = model.predict(x_adv)
+
+                # Calcolo dell'accuratezza post-attacco
+                accuracy_under_attack = metric.performance_score(y_true=labels, y_pred=y_pred_adv)
+
+                # Calcolo della spiegabilità (se richiesto)
+                attributions = compute_explainability(explainer_class, model, x_adv, num_classes) if explainer_class else None
+
+                # Salvataggio dei risultati
+                return({
+                    'model_name': model_names[idx],
+                    'x_adv': x_adv,
+                    'y_pred_adv': y_pred_adv,
+                    'accuracy_under_attack': accuracy_under_attack,
+                    'attributions': attributions
+                })
+
+            except Exception as e:
+                print(f"⚠️ Errore durante l'attacco su {model_names[idx]}: {e}")
+
+    except Exception as e:
+        print(f"❌ Errore generale nell'esecuzione di AutoAttack: {e}")
+        return {'error': str(e)}
+
+
 
 def FNM_attack(samples, labels, model, explainer_class=None, num_classes=10):
 	"""Esegue l'attacco FMN e raccoglie spiegabilità, perturbazione e confidenza."""
@@ -276,28 +334,30 @@ if __name__ == "__main__":
 	accuracies = [metric.performance_score(y_true=ts.Y, y_pred=y_pred) for y_pred in models_preds]
 
 
-	"""##Saves or loads  attack data on the disk"""
+	"""##Saves or loads  models on the disk"""
+	print("-" * 90)
+	print("Caricamento dei modelli....")
 	for idx, model in enumerate(models):
 		if not isinstance(model, CClassifierPyTorch):
 			print(f"Errore: Il modello {model_names[idx]} non è un'istanza di CClassifierPyTorch.")
 		else:
 			print(f"Il modello {model_names[idx]} è stato caricato correttamente.")
+	print("-" * 90)
 
 
 	print("-" * 90)
+	print("Accuratezza pulita dei modelli:")
 	# Stampa delle accuratezze
 	for idx in range(len(model_names)):
 		print(f"Model name: {model_names[idx]:<40} - Clean model accuracy: {(accuracies[idx] * 100):.2f} %")
 	print("-" * 90)
 
 
-
-
-	# 🔄 Caricamento o generazione dei risultati
+	# Caricamento o generazione dei risultati
 	results_FNM = load_results(results_file_FNM)
 
 	if not results_FNM:  # Se il caricamento non ha avuto successo, genera i dati
-		print(f"⚠️ Il file '{results_file_FNM}' non esiste o è corrotto. Generando nuovi risultati...")
+		print(f"Il file '{results_file_FNM}' non esiste o è corrotto. Generando nuovi risultati...")
 		results_FNM = [
 			{'model_name': name,
 			 'result': FNM_attack(ts.X, ts.Y, model, CExplainerIntegratedGradients, len(dataset_labels))}
@@ -313,7 +373,7 @@ if __name__ == "__main__":
 
 	print("-" * 90)
 	# Stampa delle accuratezze dopo l'attacco
-
+	print("Accuratezza dei modelli sotto attacco FNM:")
 	for idx in range(len(model_names)):
 		accuracy = metric.performance_score(
 			y_true=ts.Y,
@@ -324,85 +384,30 @@ if __name__ == "__main__":
 
 	#############################################################################################
 
-
-
-
-
-
 	# Caricare i risultati se esistono già
-	results_autoattack = load_results(results_file_AA)
+	results_AA = load_results(results_file_AA)
 
-	if results_autoattack is None:  # Se i risultati non esistono, eseguire l'attacco
-		print("⚠️ Nessun file di risultati trovato. Eseguo AutoAttack...")
+	if not results_AA :  # Se i risultati non esistono, eseguire l'attacco
+		print(f"Il file '{results_AA}' non esiste o è corrotto. Generando nuovi risultati...")
 
-		# Assicurarsi che almeno un modello sia stato caricato
-		if not models:
-			raise ValueError("Errore: Nessun modello è stato caricato correttamente.")
+		results_AA = [
+			{'model_name': name,
+			 'result': FNM_attack(ts.X, ts.Y, model, CExplainerIntegratedGradients, len(dataset_labels))}
+			for model, name in zip(models, model_names)
+		]
 
-		# Inizializzazione della metrica di accuratezza
-		metric = CMetricAccuracy()
+		save_results(results_file_AA, results_AA)
 
-		# Converti il dataset in tensori PyTorch per AutoAttack
-		device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-		x_test_torch = torch.tensor(ts.X.tondarray(), dtype=torch.float32).to(device)
-		y_test_torch = torch.tensor(ts.Y.tondarray(), dtype=torch.long).to(device)
-
-		# Assicurarsi che x_test_torch abbia il formato corretto [batch, channels, height, width]
-		if len(x_test_torch.shape) == 2:
-			x_test_torch = x_test_torch.view(-1, *input_shape)
-
-		# Lista per salvare i risultati dell'attacco AutoAttack per ciascun modello
-		results_autoattack = []
-
-		# Esecuzione dell'attacco per ogni modello
-		for idx, model in enumerate(models):
-			print(f"\n🔍 Esecuzione AutoAttack su: {model_names[idx]}")
-
-			# Estrai il modello PyTorch nativo da CClassifierPyTorch
-			pytorch_model = model.model.to(device)
-			pytorch_model.eval()
-
-			# Creazione dell'attaccante AutoAttack per il modello attuale
-			adversary = AutoAttack(pytorch_model, norm='Linf', eps=8 / 255)
-			adversary.apgd.n_restarts = 1
-
-			# Esecuzione dell'attacco con i tensori corretti
-			x_adv_torch = adversary.run_standard_evaluation(x_test_torch, y_test_torch)
-
-			# Conversione dei dati avversari da PyTorch Tensor a SecML CArray
-			x_adv = CArray(x_adv_torch.cpu().detach().numpy())
-
-			# Predizioni post-attacco
-			y_pred_adv = model.predict(x_adv)
-
-			# Calcolo dell'accuratezza post-attacco
-			accuracy_under_attack = metric.performance_score(y_true=ts.Y, y_pred=y_pred_adv)
-
-			# Salvataggio dei risultati
-			results_autoattack.append({
-				'model_name': model_names[idx],
-				'x_adv': x_adv,
-				'y_pred_adv': y_pred_adv,
-				'accuracy_under_attack': accuracy_under_attack
-			})
-
-			print(
-				f"✅ Attacco completato per {model_names[idx]} - Accuracy under AA attack: {(accuracy_under_attack * 100):.2f} %")
-
-		# 🔄 Salva i risultati dopo l'esecuzione
-		save_results(results_file_AA, results_autoattack)
-
-	else:
-		print(f"✅ Risultati caricati da '{results_file_AA}', salto l'esecuzione dell'attacco.")
-
-	print("📉 Accuratezza dei modelli sotto attacco AutoAttack:")
-	for result in results_autoattack:
+	print("-" * 90)
+	print("Accuratezza dei modelli sotto attacco AutoAttack:")
+	for result in results_AA:
 		print(
 			f"Model name: {result['model_name']:<40} - Accuracy under AA attack: {(result['accuracy_under_attack'] * 100):.2f} %")
 	print("-" * 90)
 
 	#############################################################################################
+
+
 	print("Calcolo della Explainability")
 	# Itera sui modelli
 	for model_id in range(len(models)):
@@ -481,15 +486,14 @@ if __name__ == "__main__":
 	#############################################################################################################
 
 	print("Calcolo e plot della CONFIDENCE")
-	# 📂 Percorso file
 
 	num_samples_to_process = 5  # Numero di campioni da processare
 
-	# 🔄 Caricamento o generazione dei risultati
+	# Caricamento o generazione dei risultati
 	CONFIDENCE_results_FNM = load_results(results_file_confidence)
 
 	if not CONFIDENCE_results_FNM:  # Se il caricamento non ha avuto successo, genera i dati
-		print(f"⚠️ Il file '{results_file_confidence}' non esiste o è corrotto. Generando nuovi risultati...")
+		print(f"⚠Il file '{results_file_confidence}' non esiste o è corrotto. Generando nuovi risultati...")
 		CONFIDENCE_results_FNM = generate_confidence_results(
 			num_samples_to_process, models, model_names, dataset_labels, ts
 		)
