@@ -751,13 +751,14 @@ fmn_json_path = "extracted_data/data_attack_result_FMN.json"
 aa_json_path = "extracted_data/data_autoattack_results.json"
 
 
+
 # Funzione per caricare i dati JSON
 def load_json(file_path):
 	with open(file_path, "r") as f:
 		return json.load(f)
 
 
-# Funzione per estrarre i numeri dalle stringhe CArray
+# Funzione per estrarre numeri dalle stringhe CArray
 def extract_numbers(carray_str):
 	return list(map(int, re.findall(r'\d+', carray_str)))
 
@@ -781,7 +782,7 @@ fmn_results = {item["model_name"]: extract_numbers(item["result"]["y_pred_adv"])
 aa_results = {item["model_name"]: extract_numbers(item["y_pred_adv"]) for item in aa_data}
 
 # Creazione dei dizionari per le immagini avversarie
-fmn_adv_samples = {item["model_name"]: extract_adv_samples(item["result"]["x_adv"]) for item in fmn_data}
+fmn_adv_samples = {item["model_name"]: extract_adv_samples(item["result"]["x_seq"]) for item in fmn_data}
 aa_adv_samples = {item["model_name"]: extract_adv_samples(item["x_adv"]) for item in aa_data}
 
 # Identificazione dei campioni con discrepanze
@@ -849,7 +850,7 @@ for model, samples in explanation.items():
 		print(f" - Campione {sample['sample_idx']}: {sample['reason']}")
 
 # Salvataggio dei risultati in un file JSON
-output_path = "extracted_data/explanation_results.json"
+output_path = "explanation_results.json"
 with open(output_path, "w") as f:
 	json.dump(explanation, f, indent=4)
 

@@ -37,7 +37,9 @@ This project is developed for the UNICA.IT University Machine Learning Security 
 
 ## Project goal
 The goal of this project is to re-evaluate 5 RobustBench models using another attack algorithm (e.g., FMN) and identify samples for which one attack succeeds while the other fails. In other words, we aim to compare the effectiveness of different attacks against robust models, to analyze in which cases one type of attack is effective while another fails, thus contributing to a deeper understanding of the robustness of models and attack algorithms.
-
+scrivi un codice python per identificare
+i campioni per i quali un attacco funziona e l'altro no. Spiegare i risultati, ovvero fornire
+alcune motivazioni sul perché uno degli attacchi non ha funzionato correttamente, mentre l'altro sì.
 
 ## Solution Design
 To re-evaluate the FNM model, we use as a basis for comparison the results of "AutoAttack - Robustbench"
