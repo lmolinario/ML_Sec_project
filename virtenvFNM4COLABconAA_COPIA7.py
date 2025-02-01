@@ -827,9 +827,9 @@ for model_name, sample_indices in discrepant_samples.items():
 		# Fornire spiegazione basata sulla differenza di perturbazione
 		if norm_fmn is not None and norm_aa is not None:
 			if norm_fmn > norm_aa:
-				reason = f"FMN ha generato una perturbazione più grande ({norm_fmn:.4f}) rispetto ad AutoAttack ({norm_aa:.4f}), suggerendo che FMN potrebbe aver richiesto più alterazioni per ingannare il modello."
+				reason = (f"FMN ha generato una perturbazione più grande ({norm_fmn:.4f} vs {norm_aa:.4f}) rispetto ad AutoAttack.\nQuesto potrebbe indicare che AutoAttack ha trovato una soluzione più efficace nel ridurre l'accuratezza del modello, ma non necessariamente più efficiente in termini di perturbazione minima")
 			elif norm_fmn < norm_aa:
-				reason = f"AutoAttack ha generato una perturbazione più grande ({norm_aa:.4f}) rispetto a FMN ({norm_fmn:.4f}), indicando che AutoAttack ha trovato una perturbazione più efficace."
+				reason = (f"AutoAttack ha generato una perturbazione più grande ({norm_aa:.4f} vs {norm_fmn:.4f}) rispetto a FMN.\nQuesto potrebbe indicare che AutoAttack ha trovato una soluzione più efficace nel ridurre l'accuratezza del modello, ma non necessariamente più efficiente in termini di perturbazione minima")
 			else:
 				reason = "Le perturbazioni di entrambi gli attacchi sono simili, suggerendo che il fallimento di uno dei due potrebbe dipendere dalla strategia di attacco piuttosto che dalla dimensione della perturbazione."
 		else:
