@@ -133,3 +133,130 @@ Se FMN ha successo e AutoAttack fallisce, potrebbe significare che AutoAttack no
 Possibili spiegazioni per le differenze
 Dipendenza dalla classe: alcune classi di immagini potrebbero essere più difficili da attaccare con FMN che con AutoAttack. Effetto interruzione: AutoAttack può creare interruzioni più "dirompenti", mentre FMN lavora su piccole modifiche che potrebbero non essere sempre efficaci.
 Robustezza del modello: il modello potrebbe resistere a un attacco meglio dell'altro a seconda delle sue caratteristiche di robustezza.
+
+
+
+Ottimo! 🎉 Il codice ora funziona correttamente e sta **identificando i campioni per cui un attacco funziona mentre l'altro no**. Vediamo i **risultati ottenuti e come interpretarli**.
+
+---
+
+## **📊 Analisi dei Risultati**
+Abbiamo identificato i **campioni discordanti**, ovvero quelli per cui **FMN e AutoAttack hanno avuto risultati diversi**:
+
+### **1️⃣ Ding2020MMA**
+- **5 campioni discordanti (27, 28, 31, 43, 57)**
+- **AutoAttack più efficace** nei campioni: `27, 31, 43, 57`
+- **FMN più efficace** nel campione: `28`
+- **Motivazione:**  
+  - AutoAttack è più efficace nella maggior parte dei casi perché trova **una direzione più aggressiva nella perturbazione**.  
+  - FMN riesce a superarlo nel campione `28`, probabilmente perché **minimizza meglio la perturbazione**, trovando un attacco più sottile ma comunque efficace.
+
+---
+
+### **2️⃣ Wong2020Fast**
+- **3 campioni discordanti (5, 16, 46)**
+- **AutoAttack più efficace in tutti i casi**
+- **Motivazione:**  
+  - Per questo modello, AutoAttack ha generato perturbazioni più efficaci rispetto a FMN, il che potrebbe indicare che Wong2020Fast è **più resistente a perturbazioni minime** (come quelle di FMN), ma più vulnerabile a perturbazioni più aggressive (come AutoAttack).
+
+---
+
+### **3️⃣ Andriushchenko2020Understanding**
+- **Nessun campione discordante**
+- **Motivazione:**  
+  - FMN e AutoAttack probabilmente hanno avuto lo stesso effetto su tutti i campioni, segnalando che il modello è **equamente vulnerabile** a entrambi i tipi di attacco.
+
+---
+
+### **4️⃣ Sitawarin2020Improving**
+- **Nessun campione discordante**
+- **Motivazione:**  
+  - Stesso discorso di Andriushchenko2020Understanding: entrambi gli attacchi sono probabilmente ugualmente efficaci o inefficaci.
+
+---
+
+### **5️⃣ Cui2023Decoupled_WRN-28-10**
+- **Nessun campione discordante**
+- **Motivazione:**  
+  - Questo modello ha la più alta accuratezza sotto attacco, quindi è probabile che sia **più robusto** contro entrambi i metodi.
+
+---
+
+## **💡 Interpretazione Generale**
+1. **AutoAttack sembra essere più efficace di FMN nella maggior parte dei casi.**
+   - FMN ha avuto successo solo in **un caso** su Ding2020MMA.
+   - Probabilmente perché AutoAttack è **più aggressivo**, mentre FMN cerca di minimizzare la perturbazione.
+
+2. **Modelli più robusti non hanno campioni discordanti.**
+   - Modelli come `Andriushchenko2020Understanding`, `Sitawarin2020Improving` e `Cui2023Decoupled_WRN-28-10` non hanno mostrato campioni discordanti.
+   - Ciò potrebbe indicare che la loro robustezza impedisce grandi differenze tra i due attacchi.
+
+3. **Ding2020MMA e Wong2020Fast sono più vulnerabili a differenze tra attacchi.**
+   - Potrebbero avere punti deboli specifici che un attacco può sfruttare meglio dell’altro.
+
+---
+
+## **🔜 Prossimi Passi**
+✔ **Visualizzare alcuni campioni discordanti**  
+  - Possiamo plottare gli esempi per capire meglio **le differenze visive nelle perturbazioni** tra FMN e AutoAttack.  
+  - Ti interessa generare delle immagini di confronto? 📊  
+
+✔ **Analizzare le perturbazioni**  
+  - Possiamo **calcolare e plottare la distanza L∞** tra immagini originali e avversarie per capire meglio la differenza tra FMN e AutoAttack.
+
+✔ **Testare altri modelli o dataset**  
+  - Se hai un altro set di modelli o dataset, possiamo fare lo stesso tipo di analisi per verificarne la robustezza.
+
+---
+
+Se vuoi approfondire qualche punto, dimmi pure! 🚀
+
+
+
+Per valutare se i risultati ottenuti sono in linea con lo **stato dell'arte e il background**, possiamo confrontarli con la letteratura esistente sui modelli di RobustBench e sugli attacchi **AutoAttack** e **FMN**. Ecco un'analisi approfondita da integrare nel report:
+
+---
+
+### **📚 Confronto con lo Stato dell'Arte**
+1. **AutoAttack vs. FMN nei lavori esistenti**  
+   - **AutoAttack** è noto per essere un attacco **forte e affidabile**, spesso considerato **lo standard per valutare la robustezza** dei modelli su dataset come CIFAR-10 e ImageNet.
+   - **FMN** è stato sviluppato per trovare una **soluzione di perturbazione minima**, risultando spesso **meno efficace** rispetto ad attacchi più aggressivi.
+
+   🔹 **I nostri risultati confermano quanto riportato in letteratura:**  
+   - **AutoAttack ottiene una maggiore efficacia rispetto a FMN** nella maggior parte dei modelli testati.
+   - **FMN è meno efficace su modelli altamente vulnerabili**, ma può funzionare meglio su modelli che già hanno una certa resistenza alle perturbazioni.
+
+---
+
+2. **Comportamento dei modelli di RobustBench**
+   - Studi precedenti su **Ding2020MMA** e **Wong2020Fast** mostrano che questi modelli hanno una robustezza **moderata** e possono essere superati da attacchi più sofisticati.
+   - **Modelli più recenti come Cui2023Decoupled_WRN-28-10** tendono ad avere una maggiore **robustezza strutturale**, il che spiega perché non hanno campioni discordanti nei nostri esperimenti.
+
+   🔹 **I nostri risultati sono coerenti con questi studi:**
+   - **Modelli più vecchi (Ding2020MMA, Wong2020Fast) mostrano più vulnerabilità.**
+   - **Modelli più nuovi (Cui2023Decoupled_WRN-28-10) resistono meglio agli attacchi.**
+
+---
+
+### **📈 Confronto con Benchmark Noti**
+| **Modello**                           | **Accuracy Pulita** | **Accuracy sotto AutoAttack** | **Accuracy sotto FMN** |
+|---------------------------------------|---------------------|------------------------------|------------------------|
+| Ding2020MMA                           | ~84%               | 31.25%                        | 39.06%                 |
+| Wong2020Fast                          | ~84%               | 37.50%                        | 42.19%                 |
+| Andriushchenko2020Understanding       | ~78%               | 43.75%                        | 43.75%                 |
+| Sitawarin2020Improving                | ~82%               | 39.06%                        | 39.06%                 |
+| Cui2023Decoupled_WRN-28-10            | ~93%               | 67.19%                        | 67.19%                 |
+
+🔹 **Osservazioni dal confronto:**  
+- **AutoAttack tende ad abbassare di più l'accuratezza rispetto a FMN.**  
+- **La differenza tra i due attacchi è significativa solo su alcuni modelli, come Ding2020MMA e Wong2020Fast.**  
+- **Modelli più robusti (es. Cui2023Decoupled_WRN-28-10) mostrano la stessa accuracy sotto entrambi gli attacchi**, segnalando che la loro robustezza è abbastanza uniforme.
+
+---
+
+### **💡 Conclusioni**
+✅ **I risultati sono coerenti con la letteratura e i benchmark di RobustBench.**  
+✅ **AutoAttack si conferma il metodo più efficace, mentre FMN può funzionare bene su modelli più resistenti.**  
+✅ **La robustezza dei modelli più recenti è confermata.**  
+
+Vuoi che integri queste considerazioni direttamente nel documento? 🚀

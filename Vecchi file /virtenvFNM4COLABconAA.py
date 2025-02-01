@@ -319,7 +319,7 @@ if __name__ == "__main__":
 	from secml.array import CArray
 
 	# Percorso del file per salvare i risultati
-	results_file = "../extracted_data/data_autoattack_results.pkl"
+	results_file = "../extracted_data/data_attack_result_AA.pkl"
 
 
 	def save_results(file_path, data):

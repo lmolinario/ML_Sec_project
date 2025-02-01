@@ -28,7 +28,7 @@ Contains definition of global variables
 """
 
 # Percorsi dei file per salvare i risultati degli attacchi
-results_file_AA = "extracted_data/data_autoattack_results.pkl"
+results_file_AA = "extracted_data/data_attack_result_AA.pkl"
 results_file_FMN = 'extracted_data/data_attack_result_FMN.pkl'
 results_file_confidence = 'extracted_data/data_attack_result_FMN_CONFIDENCE.pkl'
 
@@ -741,97 +741,183 @@ if __name__ == "__main__":
 
 
 #################################################################################################################
-print (type(results_AA_data))
-print (type(results_FMN_data))
-print (len(results_AA_data))
-print (len(results_FMN_data))
-print('results_AA_data[0]',results_AA_data[0])
-print('results_FMN_data[0]',results_FMN_data[0])
+
+	import pickle
+	import numpy as np
+	from secml.ml.classifiers.loss import CSoftmax
+	from robustbench.utils import load_model
+	from secml.ml import CClassifierPyTorch
+
+	# Percorsi dei file contenenti i risultati degli attacchi
+	file_AA = 'extracted_data/data_attack_result_AA.pkl'
+	file_FMN = 'extracted_data/data_attack_result_FMN.pkl'
+
+	# Caricamento dei risultati
+	with open(file_AA, 'rb') as f:
+		results_AA = pickle.load(f)
+
+	with open(file_FMN, 'rb') as f:
+		results_FMN = pickle.load(f)
 
 
-# Creazione dei dizionari per i risultati degli attacchi
-fmn_results=results_FMN_data[0]['result']['y_pred_adv']
-aa_results=results_AA_data[0]['y_pred_adv']
 
+	# Calcola la confidence per AutoAttack
+	confidence_AA = []  # Inizializza come lista vuota
 
-# Creazione dei dizionari per le immagini avversarie
-fmn_adv_samples = results_FMN_data[0]['result']['x_seq']
-aa_adv_samples = results_AA_data[0]['x_adv']
+	for model_idx, model in enumerate(models):
+		print(f"Calcolando la confidenza per il modello: {model_names[model_idx]}")
 
-# Identificazione dei campioni con discrepanze
-discrepant_samples = {}
+		x_adv_AA = results_AA[model_idx]['x_adv']  # Immagini avversarie AutoAttack
+		scores_AA = model.predict(x_adv_AA, return_decision_function=True)[1]  # Ottieni logits
 
-for model_name in fmn_results.keys():
-	if model_name in aa_results:
-		fmn_preds = fmn_results[model_name]
-		aa_preds = aa_results[model_name]
+		# Verifica se il modello ha generato output validi
+		if scores_AA is None or scores_AA.shape[0] == 0:
+			print(f"⚠️ Errore: il modello {model_names[model_idx]} non ha generato predizioni valide!")
+			confidence_AA.append(None)  # Evita errori di iterazione
+			continue
 
-		# Assicura che entrambe le liste abbiano la stessa lunghezza
-		min_length = min(len(fmn_preds), len(aa_preds))
-		fmn_preds = fmn_preds[:min_length]
-		aa_preds = aa_preds[:min_length]
+		# Calcolo softmax per trasformare logits in probabilità
+		conf_AA = CSoftmax().softmax(scores_AA)
+		confidence_AA.append(conf_AA)
 
-		# Identificazione dei campioni in cui gli attacchi differiscono
-		differing_samples = [
-			i for i, (fmn_pred, aa_pred) in enumerate(zip(fmn_preds, aa_preds)) if fmn_pred != aa_pred
+	print("✅ Confidenza per AutoAttack calcolata con successo!")
+
+	# Identificazione dei campioni con risultati discordanti
+	mismatched_samples = {}
+
+	for model_idx, model_name in enumerate(model_names):
+		print(f"\nAnalizzando il modello: {model_name}")
+
+		y_pred_AA = results_AA[model_idx]['y_pred_adv'].tondarray()  # Converti in array NumPy
+		y_pred_FMN = results_FMN[model_idx]['result']['y_pred_adv'].tondarray()
+
+		adv_ds_AA = results_AA[model_idx]['x_adv']  # Immagini avversarie AA
+		adv_ds_FMN = results_FMN[model_idx]['result']['adv_ds'].X  # Immagini avversarie FMN
+
+		confidence_FMN = results_FMN[model_idx]['result']['confidence']  # Confidenza FMN
+		confidence_AA_model = confidence_AA[model_idx]  # Usa la confidence calcolata
+
+		y_true = results_FMN[model_idx]['result']['adv_ds'].Y.tondarray()  # Usa y_true da results_FMN
+
+		# Identificazione dei campioni discordanti
+		differing_indices = [
+			idx for idx in range(y_pred_AA.shape[0])
+			if (y_pred_AA[idx] != y_true[idx]) != (y_pred_FMN[idx] != y_true[idx])
 		]
 
-		if differing_samples:
-			discrepant_samples[model_name] = differing_samples
+		mismatched_samples[model_name] = differing_indices
+		print(f"Campioni discordanti per {model_name}: {len(differing_indices)}")
 
-# Analisi delle discrepanze e motivazioni
-explanation = {}
+	# 🔹 Creazione di una mappatura tra model_name e model_idx
+	model_name_to_idx = {name: idx for idx, name in enumerate(model_names)}
 
-for model_name, sample_indices in discrepant_samples.items():
-	explanation[model_name] = []
+	# Analisi finale e motivazioni
+	for model_name, indices in mismatched_samples.items():
+		model_idx = model_name_to_idx[model_name]  # Recupera l'indice corretto per la confidenza
 
-	for sample_idx in sample_indices:
-		# Estrarre le perturbazioni per confronto
-		fmn_perturbation = fmn_adv_samples[model_name]
-		aa_perturbation = aa_adv_samples[model_name]
+		print(f"\nAnalisi dei risultati per il modello {model_name}")
 
-		# Calcolare la norma L∞ della perturbazione
-		if len(fmn_perturbation) > 0 and len(aa_perturbation) > 0:
-			norm_fmn = np.linalg.norm(fmn_perturbation, ord=np.inf)
-			norm_aa = np.linalg.norm(aa_perturbation, ord=np.inf)
-		else:
-			norm_fmn, norm_aa = None, None
+		for idx in indices:
+			conf_AA = confidence_AA[model_idx][idx, y_pred_AA[idx]] if confidence_AA[model_idx] is not None else "N/A"
+			conf_FMN = confidence_FMN[idx, y_pred_FMN[idx]]
 
-		# Fornire spiegazione basata sulla differenza di perturbazione
-		if norm_fmn is not None and norm_aa is not None:
-			if norm_fmn > norm_aa:
-				reason = (f"FMN ha generato una perturbazione più grande ({norm_fmn:.4f} vs {norm_aa:.4f}) rispetto ad AutoAttack.\nQuesto potrebbe indicare che AutoAttack ha trovato una soluzione più efficace nel ridurre l'accuratezza del modello, ma non necessariamente più efficiente in termini di perturbazione minima")
-			elif norm_fmn < norm_aa:
-				reason = (f"AutoAttack ha generato una perturbazione più grande ({norm_aa:.4f} vs {norm_fmn:.4f}) rispetto a FMN.\nQuesto potrebbe indicare che AutoAttack ha trovato una soluzione più efficace nel ridurre l'accuratezza del modello, ma non necessariamente più efficiente in termini di perturbazione minima")
+			print(f"- Campione {idx}: Confidenza AA={conf_AA}, Confidenza FMN={conf_FMN}")
+			print("  Potenziali motivazioni:")
+
+			if conf_AA != "N/A" and conf_AA > conf_FMN:
+				print("  * AutoAttack potrebbe aver trovato una direzione più efficace nella perturbazione.")
+			elif conf_FMN > conf_AA:
+				print("  * FMN potrebbe aver trovato un percorso più efficiente minimizzando la perturbazione.")
 			else:
-				reason = "Le perturbazioni di entrambi gli attacchi sono simili, suggerendo che il fallimento di uno dei due potrebbe dipendere dalla strategia di attacco piuttosto che dalla dimensione della perturbazione."
-		else:
-			reason = "Impossibile confrontare le perturbazioni a causa di dati mancanti."
+				print("  * Il modello potrebbe essere più resistente ad un attacco rispetto all'altro.")
 
-		explanation[model_name].append({
-			"sample_idx": sample_idx,
-			"FMN perturbation (L∞)": norm_fmn,
-			"AA perturbation (L∞)": norm_aa,
-			"reason": reason
-		})
 
-# Stampa dei risultati
-print("🔍 Campioni in cui un attacco ha avuto successo mentre l'altro ha fallito:")
-for model, samples in explanation.items():
-	print(f"\n📌 Modello: {model}")
-	for sample in samples:
-		print(f" - Campione {sample['sample_idx']}: {sample['reason']}")
 
-# Salvataggio dei risultati in un file JSON
-output_path = "explanation_results.json"
-with open(output_path, "w") as f:
-	json.dump(explanation, f, indent=4)
 
-print(f"\n✅ Risultati e spiegazioni salvati in '{output_path}'.")
+
 #################################################################################################################
 
 
-	### Analisi di Explainability ###
+	import numpy as np
+	import matplotlib.pyplot as plt
+	from secml.array import CArray
+
+
+	def convert_image(img):
+		"""
+		Converte un CArray in formato (H, W, C) per la visualizzazione.
+		"""
+		if isinstance(img, CArray):
+			img = img.tondarray()
+		return img.reshape(3, 32, 32).transpose(1, 2, 0)
+
+
+	def plot_comparison(original, adv_AA, adv_FMN, title, sample_idx):
+		"""
+		Visualizza immagini originali, attaccate da AutoAttack e FMN,
+		e le perturbazioni generate.
+		"""
+		original = original.reshape(3, 32, 32).transpose(1, 2, 0)
+		adv_AA = adv_AA.reshape(3, 32, 32).transpose(1, 2, 0)
+		adv_FMN = adv_FMN.reshape(3, 32, 32).transpose(1, 2, 0)
+
+		diff_AA = np.abs(adv_AA - original)  # Perturbazione AA
+		diff_FMN = np.abs(adv_FMN - original)  # Perturbazione FMN
+
+		# Calcolo distanza L∞ (valore massimo della differenza)
+		l_inf_AA = np.max(diff_AA)
+		l_inf_FMN = np.max(diff_FMN)
+
+		fig, axes = plt.subplots(1, 5, figsize=(15, 5))
+		axes[0].imshow(convert_image(original))
+		axes[0].set_title("Original")
+
+		axes[1].imshow(convert_image(adv_AA))
+		axes[1].set_title(f"AutoAttack\nL∞={l_inf_AA:.4f}")
+
+		axes[2].imshow(convert_image(adv_FMN))
+		axes[2].set_title(f"FMN\nL∞={l_inf_FMN:.4f}")
+
+		axes[3].imshow(diff_AA / l_inf_AA, cmap="hot")
+		axes[3].set_title("Perturb. AA")
+
+		axes[4].imshow(diff_FMN / l_inf_FMN, cmap="hot")
+		axes[4].set_title("Perturb. FMN")
+
+		for ax in axes:
+			ax.axis('off')
+
+		plt.suptitle(f"{title} - Sample {sample_idx}")
+		plt.savefig(f"FMNvsAA{title}.png")
+
+
+	# 🔹 Visualizzazione dei campioni discordanti
+	num_samples_to_display = 3  # Numero massimo di esempi per modello
+	for model_name, indices in mismatched_samples.items():
+		print(f"\n📊 Visualizzazione per il modello: {model_name}")
+
+		model_idx = model_name_to_idx[model_name]  # Recupera indice modello
+
+		adv_images_AA = results_AA[model_idx]['x_adv'].tondarray()
+		adv_images_FMN = results_FMN[model_idx]['result']['adv_ds'].X.tondarray()
+		original_images = results_FMN[model_idx]['result']['adv_ds'].X.tondarray()
+
+		count = 0
+		for idx in indices:
+			if count >= num_samples_to_display:
+				break
+
+			original = original_images[idx]
+			adv_AA = adv_images_AA[idx]
+			adv_FMN = adv_images_FMN[idx]
+
+			plot_comparison(original, adv_AA, adv_FMN, model_name, idx)
+
+			count += 1
+
+
+###################################################################################################################
+### Analisi di Explainability ###
 #	explainability_analysis(models, model_names, results_FMN, ts, dataset_labels, input_shape)
 
 	### Analisi della Confidence ###
