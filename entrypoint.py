@@ -175,7 +175,7 @@ def load_results(file_path):
             print(f"Errore nel caricamento di '{file_path}': {e}")
     return []
 
-results_FNM = load_results('extracted_data/data_attack_result_FNM.pkl')
+results_FNM = load_results('extracted_data/data_attack_result_FMN.pkl')
 if not results_FNM:
     results_FNM = []
     for model, name in zip(models, model_names):
@@ -183,7 +183,7 @@ if not results_FNM:
         attack_result = FNM_attack(ts.X, ts.Y, model, CExplainerIntegratedGradients, len(dataset_labels))
         results_FNM.append({'model_name': name, 'result': attack_result})
 
-    with open('extracted_data/data_attack_result_FNM.pkl', 'wb') as f:
+    with open('extracted_data/data_attack_result_FMN.pkl', 'wb') as f:
         pickle.dump(results_FNM, f)
 
 
@@ -194,7 +194,7 @@ if not results_FNM:
 
 # files.download('attack_data.bin')
 
-with open('extracted_data/data_attack_result_FNM.pkl', 'rb') as file:
+with open('extracted_data/data_attack_result_FMN.pkl', 'rb') as file:
     attack_data = pickle.load(file)
 
 
@@ -362,7 +362,7 @@ for model_id in range(len(models)):
 #############################################################################################################
 
 
-results_file_confidence = 'extracted_data/data_attack_result_FNM_CONFIDENCE.pkl'
+results_file_confidence = 'extracted_data/data_attack_result_FMN_CONFIDENCE.pkl'
 num_samples_to_process = 5  # Numero di samples da processare
 
 # Controlla se il file esiste

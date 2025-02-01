@@ -29,8 +29,8 @@ Contains definition of global variables
 
 # Percorsi dei file per salvare i risultati degli attacchi
 results_file_AA = "extracted_data/data_autoattack_results.pkl"
-results_file_FNM = 'extracted_data/data_attack_result_FNM.pkl'
-results_file_confidence = 'extracted_data/data_attack_result_FNM_CONFIDENCE.pkl'
+results_file_FNM = 'extracted_data/data_attack_result_FMN.pkl'
+results_file_confidence = 'extracted_data/data_attack_result_FMN_CONFIDENCE.pkl'
 
 # Forma dell'input (canali, altezza, larghezza) per i modelli di deep learning
 input_shape = (3, 32, 32)
@@ -947,7 +947,7 @@ visualize_adversarial_comparison(results_FNM, results_AA, ts, dataset_labels)
 
 	### Analisi della Confidence ###
 #	confidence_analysis(models, model_names, ts, dataset_labels,
-#	                    results_file_confidence="extracted_data/data_attack_result_FNM_CONFIDENCE.pkl", num_samples=5)
+#	                    results_file_confidence="extracted_data/data_attack_result_FMN_CONFIDENCE.pkl", num_samples=5)
 
 #	print("\n✅ Fine dell'esecuzione!")
 

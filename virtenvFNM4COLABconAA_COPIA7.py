@@ -742,15 +742,118 @@ if __name__ == "__main__":
 
 #################################################################################################################
 
+import json
+import numpy as np
+import re
 
-print ("results_AA_data",results_AA_data)
-print ()
-
-print ('results_FMN_data',results_FMN_data)
-
+# Percorsi ai file JSON contenenti i risultati degli attacchi
+fmn_json_path = "extracted_data/data_attack_result_FMN.json"
+aa_json_path = "extracted_data/data_autoattack_results.json"
 
 
+# Funzione per caricare i dati JSON
+def load_json(file_path):
+	with open(file_path, "r") as f:
+		return json.load(f)
 
+
+# Funzione per estrarre i numeri dalle stringhe CArray
+def extract_numbers(carray_str):
+	return list(map(int, re.findall(r'\d+', carray_str)))
+
+
+# Funzione per estrarre perturbazioni come array numpy
+def extract_adv_samples(carray_str):
+	try:
+		# Rimuove il prefisso "CArray" e converte in lista di float
+		array_data = re.findall(r"[-+]?\d*\.\d+|\d+", carray_str)
+		return np.array(list(map(float, array_data)))
+	except:
+		return np.array([])  # In caso di errore, restituisce un array vuoto
+
+
+# Caricamento dei dati
+fmn_data = load_json(fmn_json_path)
+aa_data = load_json(aa_json_path)
+
+# Creazione dei dizionari per i risultati degli attacchi
+fmn_results = {item["model_name"]: extract_numbers(item["result"]["y_pred_adv"]) for item in fmn_data}
+aa_results = {item["model_name"]: extract_numbers(item["y_pred_adv"]) for item in aa_data}
+
+# Creazione dei dizionari per le immagini avversarie
+fmn_adv_samples = {item["model_name"]: extract_adv_samples(item["result"]["x_adv"]) for item in fmn_data}
+aa_adv_samples = {item["model_name"]: extract_adv_samples(item["x_adv"]) for item in aa_data}
+
+# Identificazione dei campioni con discrepanze
+discrepant_samples = {}
+
+for model_name in fmn_results.keys():
+	if model_name in aa_results:
+		fmn_preds = fmn_results[model_name]
+		aa_preds = aa_results[model_name]
+
+		# Assicura che entrambe le liste abbiano la stessa lunghezza
+		min_length = min(len(fmn_preds), len(aa_preds))
+		fmn_preds = fmn_preds[:min_length]
+		aa_preds = aa_preds[:min_length]
+
+		# Identificazione dei campioni in cui gli attacchi differiscono
+		differing_samples = [
+			i for i, (fmn_pred, aa_pred) in enumerate(zip(fmn_preds, aa_preds)) if fmn_pred != aa_pred
+		]
+
+		if differing_samples:
+			discrepant_samples[model_name] = differing_samples
+
+# Analisi delle discrepanze e motivazioni
+explanation = {}
+
+for model_name, sample_indices in discrepant_samples.items():
+	explanation[model_name] = []
+
+	for sample_idx in sample_indices:
+		# Estrarre le perturbazioni per confronto
+		fmn_perturbation = fmn_adv_samples[model_name]
+		aa_perturbation = aa_adv_samples[model_name]
+
+		# Calcolare la norma L∞ della perturbazione
+		if len(fmn_perturbation) > 0 and len(aa_perturbation) > 0:
+			norm_fmn = np.linalg.norm(fmn_perturbation, ord=np.inf)
+			norm_aa = np.linalg.norm(aa_perturbation, ord=np.inf)
+		else:
+			norm_fmn, norm_aa = None, None
+
+		# Fornire spiegazione basata sulla differenza di perturbazione
+		if norm_fmn is not None and norm_aa is not None:
+			if norm_fmn > norm_aa:
+				reason = f"FMN ha generato una perturbazione più grande ({norm_fmn:.4f}) rispetto ad AutoAttack ({norm_aa:.4f}), suggerendo che FMN potrebbe aver richiesto più alterazioni per ingannare il modello."
+			elif norm_fmn < norm_aa:
+				reason = f"AutoAttack ha generato una perturbazione più grande ({norm_aa:.4f}) rispetto a FMN ({norm_fmn:.4f}), indicando che AutoAttack ha trovato una perturbazione più efficace."
+			else:
+				reason = "Le perturbazioni di entrambi gli attacchi sono simili, suggerendo che il fallimento di uno dei due potrebbe dipendere dalla strategia di attacco piuttosto che dalla dimensione della perturbazione."
+		else:
+			reason = "Impossibile confrontare le perturbazioni a causa di dati mancanti."
+
+		explanation[model_name].append({
+			"sample_idx": sample_idx,
+			"FMN perturbation (L∞)": norm_fmn,
+			"AA perturbation (L∞)": norm_aa,
+			"reason": reason
+		})
+
+# Stampa dei risultati
+print("🔍 Campioni in cui un attacco ha avuto successo mentre l'altro ha fallito:")
+for model, samples in explanation.items():
+	print(f"\n📌 Modello: {model}")
+	for sample in samples:
+		print(f" - Campione {sample['sample_idx']}: {sample['reason']}")
+
+# Salvataggio dei risultati in un file JSON
+output_path = "extracted_data/explanation_results.json"
+with open(output_path, "w") as f:
+	json.dump(explanation, f, indent=4)
+
+print(f"\n✅ Risultati e spiegazioni salvati in '{output_path}'.")
 
 #################################################################################################################
 

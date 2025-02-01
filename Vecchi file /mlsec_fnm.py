@@ -237,7 +237,7 @@ for idx, model in enumerate(models):
 
 
 
-results_file = '../extracted_data/data_attack_result_FNM.pkl'
+results_file = '../extracted_data/data_attack_result_FMN.pkl'
 
 # Controlla se il file esiste
 if os.path.exists(results_file):

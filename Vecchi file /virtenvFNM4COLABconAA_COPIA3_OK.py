@@ -29,8 +29,8 @@ Contains definition of global variables
 
 # Percorso del file per salvare i risultati
 results_file_AA = "../extracted_data/data_autoattack_results.pkl"
-results_file_FNM = '../extracted_data/data_attack_result_FNM.pkl'
-results_file_confidence = '../extracted_data/data_attack_result_FNM_CONFIDENCE.pkl'
+results_file_FNM = '../extracted_data/data_attack_result_FMN.pkl'
+results_file_confidence = '../extracted_data/data_attack_result_FMN_CONFIDENCE.pkl'
 
 input_shape = (3, 32, 32)
 
@@ -558,4 +558,4 @@ if __name__ == "__main__":
 
 
 	confidence_analysis(models, model_names, ts, dataset_labels,
-	                    "../extracted_data/data_attack_result_FNM_CONFIDENCE.pkl", num_samples=5)
+	                    "../extracted_data/data_attack_result_FMN_CONFIDENCE.pkl", num_samples=5)
