@@ -28,9 +28,9 @@ Contains definition of global variables
 """
 
 # Percorso del file per salvare i risultati
-results_file = "extracted_data/data_autoattack_results.pkl"
-results_file = 'extracted_data/data_attack_result_FNM.pkl'
-results_file_confidence = 'extracted_data/data_attack_result_FNM_CONFIDENCE.pkl'
+results_file = "../extracted_data/data_autoattack_results.pkl"
+results_file = '../extracted_data/data_attack_result_FNM.pkl'
+results_file_confidence = '../extracted_data/data_attack_result_FNM_CONFIDENCE.pkl'
 
 input_shape = (3, 32, 32)
 

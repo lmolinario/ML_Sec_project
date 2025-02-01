@@ -285,7 +285,7 @@ if __name__ == "__main__":
 
 
     # 📂 Percorso file
-    results_file = 'extracted_data/data_attack_result_FNM.pkl'
+    results_file = '../extracted_data/data_attack_result_FNM.pkl'
 
     # 🔄 Caricamento o generazione dei risultati
     results_FNM = load_results(results_file)
@@ -402,7 +402,7 @@ if __name__ == "__main__":
 
     print("Calcolo e plot della CONFIDENCE")
     # 📂 Percorso file
-    results_file_confidence = 'extracted_data/data_attack_result_FNM_CONFIDENCE.pkl'
+    results_file_confidence = '../extracted_data/data_attack_result_FNM_CONFIDENCE.pkl'
     num_samples_to_process = 5  # Numero di campioni da processare
 
     # 🔄 Caricamento o generazione dei risultati

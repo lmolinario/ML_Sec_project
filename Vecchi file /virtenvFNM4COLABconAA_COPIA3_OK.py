@@ -28,9 +28,9 @@ Contains definition of global variables
 """
 
 # Percorso del file per salvare i risultati
-results_file_AA = "extracted_data/data_autoattack_results.pkl"
-results_file_FNM = 'extracted_data/data_attack_result_FNM.pkl'
-results_file_confidence = 'extracted_data/data_attack_result_FNM_CONFIDENCE.pkl'
+results_file_AA = "../extracted_data/data_autoattack_results.pkl"
+results_file_FNM = '../extracted_data/data_attack_result_FNM.pkl'
+results_file_confidence = '../extracted_data/data_attack_result_FNM_CONFIDENCE.pkl'
 
 input_shape = (3, 32, 32)
 
@@ -408,126 +408,154 @@ if __name__ == "__main__":
 	#############################################################################################
 
 
-	print("Calcolo della Explainability")
-	# Itera sui modelli
-	for model_id in range(len(models)):
-		print(f"\nVisualizzazione per il modello: {model_names[model_id]}")
 
-		adv_ds = results_FNM[model_id]['result']['adv_ds']
-		y_adv = results_FNM[model_id]['result']['y_pred_adv']
-		attributions = results_FNM[model_id]['result']['attributions']
 
-		# Reshape delle immagini in formato (n_samples, 3, 32, 32)
-		adv_images = adv_ds.X.tondarray().reshape(-1, *input_shape)
-		original_images = ts.X.tondarray().reshape(-1, *input_shape)
+	def explainability_analysis(models, model_names, results_FNM, ts, dataset_labels, input_shape, epsilon=8 / 255):
+		"""
+		Esegue l'analisi di explainability per una lista di modelli.
 
-		# Calcola la distanza L∞ per tutti i campioni
-		distances = np.abs(adv_images - original_images).max(axis=(1, 2, 3))
+		Parametri:
+			- models: lista dei modelli
+			- model_names: nomi dei modelli
+			- results_FNM: risultati dell'attacco FNM
+			- ts: dataset originale
+			- dataset_labels: etichette del dataset
+			- input_shape: forma dell'input delle immagini
+			- epsilon: soglia per la selezione dei campioni
+		"""
+		print("Calcolo della Explainability")
 
-		# Filtra i campioni che soddisfano le condizioni
-		selected_indices = [
-			idx for idx in range(ts.X.shape[0])
-			if (distances[idx] < epsilon and y_adv[idx] != ts.Y[idx])
-		]
+		for model_id in range(len(models)):
+			print(f"\nVisualizzazione per il modello: {model_names[model_id]}")
 
-		print(f"Campioni validi per il modello {model_names[model_id]}: {len(selected_indices)}")
+			adv_ds = results_FNM[model_id]['result']['adv_ds']
+			y_adv = results_FNM[model_id]['result']['y_pred_adv']
+			attributions = results_FNM[model_id]['result']['attributions']
 
-		valid_indices = []  # Per salvare i campioni validi
-		for idx in selected_indices:
-			img = original_images[idx]
-			img_adv = adv_images[idx]
-			diff_img = img_adv - img
+			# Reshape delle immagini
+			adv_images = adv_ds.X.tondarray().reshape(-1, *input_shape)
+			original_images = ts.X.tondarray().reshape(-1, *input_shape)
 
-			# Controllo per evitare divisione per zero
-			if diff_img.max() > 1e-6:
-				valid_indices.append(idx)
+			# Calcola la distanza L∞
+			distances = np.abs(adv_images - original_images).max(axis=(1, 2, 3))
 
-			# Interrompe quando abbiamo 3 campioni validi
-			if len(valid_indices) == 3:
-				break
+			# Selezione dei campioni validi
+			selected_indices = [
+				idx for idx in range(ts.X.shape[0])
+				if (distances[idx] < epsilon and y_adv[idx] != ts.Y[idx])
+			]
 
-		print(f"Seleziono i primi {len(valid_indices)} per il plot dei samples relativi al modello {model_names[model_id]}: ")
+			print(f"Campioni validi per il modello {model_names[model_id]}: {len(selected_indices)}")
 
-		if len(valid_indices) > 0:
-			# Crea una nuova figura per i campioni selezionati
-			n_rows = len(valid_indices)  # Una riga per ogni campione
-			fig = CFigure(height=n_rows * 6, width=18)
-
-			# Aggiungi manualmente il titolo sopra la figura accedendo alla figura Matplotlib interna
-			fig.title(f"Explainability for Model: {model_names[model_id]}", fontsize=32)
-
-			for ydx, idx in enumerate(valid_indices):
+			valid_indices = []
+			for idx in selected_indices:
 				img = original_images[idx]
 				img_adv = adv_images[idx]
-				expl = attributions[idx][y_adv[idx].item(), :]
-
-				# Calcola la differenza e normalizza
 				diff_img = img_adv - img
-				diff_img /= diff_img.max()  # Sicuro, poiché controllato prima
 
-				# Calcola l'indice locale per il subplot
-				local_idx = ydx * 4
+				if diff_img.max() > 1e-6:
+					valid_indices.append(idx)
 
-				# Mostra l'immagine nel subplot calcolato
-				show_image(
-					fig,
-					local_idx,
-					img,
-					img_adv,
-					expl,
-					dataset_labels[ts.Y[idx].item()],
-					dataset_labels[y_adv[idx].item()]
-				)
+				if len(valid_indices) == 3:
+					break
 
-			# Completa e salva la figura per i campioni selezionati
-			fig.tight_layout(rect=[0, 0.003, 1, 0.94])
-			fig.savefig(f"results/Explainability_model_{model_names[model_id]}.jpg")
+			print(
+				f"Seleziono i primi {len(valid_indices)} per il plot dei samples relativi al modello {model_names[model_id]}: ")
+
+			if valid_indices:
+				n_rows = len(valid_indices)
+				fig = CFigure(height=n_rows * 6, width=18)
+				fig.title(f"Explainability for Model: {model_names[model_id]}", fontsize=32)
+
+				for ydx, idx in enumerate(valid_indices):
+					img = original_images[idx]
+					img_adv = adv_images[idx]
+					expl = attributions[idx][y_adv[idx].item(), :]
+
+					diff_img = img_adv - img
+					diff_img /= diff_img.max()
+
+					local_idx = ydx * 4
+
+					show_image(
+						fig,
+						local_idx,
+						img,
+						img_adv,
+						expl,
+						dataset_labels[ts.Y[idx].item()],
+						dataset_labels[y_adv[idx].item()]
+					)
+
+				fig.tight_layout(rect=[0, 0.003, 1, 0.94])
+				fig.savefig(f"results/Explainability_model_{model_names[model_id]}.jpg")
+
+
+	explainability_analysis(models, model_names, results_FNM, ts, dataset_labels, input_shape)
 
 	#############################################################################################################
 
-	print("Calcolo e plot della CONFIDENCE")
 
-	num_samples_to_process = 5  # Numero di campioni da processare
 
-	# Caricamento o generazione dei risultati
-	CONFIDENCE_results_FNM = load_results(results_file_confidence)
+	def confidence_analysis(models, model_names, ts, dataset_labels, results_file_confidence, num_samples=5):
+		"""
+		Calcola e genera i plot della confidence per i primi N campioni.
 
-	if not CONFIDENCE_results_FNM:  # Se il caricamento non ha avuto successo, genera i dati
-		print(f"⚠Il file '{results_file_confidence}' non esiste o è corrotto. Generando nuovi risultati...")
-		CONFIDENCE_results_FNM = generate_confidence_results(
-			num_samples_to_process, models, model_names, dataset_labels, ts
-		)
-		save_results(results_file_confidence, CONFIDENCE_results_FNM)
+		Parametri:
+			- models: lista dei modelli
+			- model_names: nomi dei modelli
+			- ts: dataset originale
+			- dataset_labels: etichette del dataset
+			- results_file_confidence: percorso file per salvare/caricare i risultati
+			- num_samples: numero di campioni da analizzare
+		"""
+		print("Calcolo e plot della CONFIDENCE")
 
-	# Creazione della figura per i primi 5 campioni
-	for sample_id in range(num_samples_to_process):
-		print(f"Calcolo e plot della CONFIDENCE : Sample n.{sample_id+1}")
-		fig = CFigure(width=30, height=4, fontsize=10, linewidth=2)
-		label_true = ts.Y[sample_id].item()
+		# Caricamento o generazione dei risultati
+		CONFIDENCE_results_FNM = load_results(results_file_confidence)
 
-		for model_id in range(5):
-			attack_result = CONFIDENCE_results_FNM[sample_id][model_id]['result']
-			x_seq = attack_result['x_seq']
-			n_iter = x_seq.shape[0]
-			itrs = CArray.arange(n_iter)
+		if not CONFIDENCE_results_FNM:  # Se il file non esiste o è corrotto
+			print(f"⚠ Il file '{results_file_confidence}' non esiste o è corrotto. Generando nuovi risultati...")
+			CONFIDENCE_results_FNM = generate_confidence_results(
+				num_samples, models, model_names, dataset_labels, ts
+			)
+			save_results(results_file_confidence, CONFIDENCE_results_FNM)
 
-			scores = models[model_id].predict(x_seq, return_decision_function=True)[1]
-			scores = CSoftmax().softmax(scores)
+		# Creazione della figura per i primi `num_samples` campioni
+		for sample_id in range(num_samples):
+			print(f"Calcolo e plot della CONFIDENCE : Sample n.{sample_id + 1}")
+			fig = CFigure(width=30, height=4, fontsize=10, linewidth=2)
+			label_true = ts.Y[sample_id].item()
 
-			fig.subplot(1, 5, model_id + 1)
-			if model_id == 0:
-				fig.sp.ylabel('Confidence')
-			fig.sp.xlabel('Iteration')
+			for model_id in range(len(models)):
+				attack_result = CONFIDENCE_results_FNM[sample_id][model_id]['result']
+				x_seq = attack_result['x_seq']
+				n_iter = x_seq.shape[0]
+				itrs = CArray.arange(n_iter)
 
-			label_adv = attack_result['y_pred_adv'][0].item()
+				# Calcola la confidence per la classe vera e avversaria
+				scores = models[model_id].predict(x_seq, return_decision_function=True)[1]
+				scores = CSoftmax().softmax(scores)
 
-			fig.sp.plot(itrs, scores[:, label_true], linestyle='--', c='green')
-			fig.sp.plot(itrs, scores[:, label_adv], c='red')
-			fig.sp.xlim(top=25, bottom=0)
+				fig.subplot(1, len(models), model_id + 1)
+				if model_id == 0:
+					fig.sp.ylabel('Confidence')
+				fig.sp.xlabel('Iteration')
 
-			fig.sp.title(f"Confidence Sample {sample_id + 1} - Model: {model_names[model_id]}\n"
-			             f"True Label {label_true} and Adv Labe {label_adv}")
-			fig.sp.legend(['Confidence True Class', 'Confidence Adv. Class'])
-		print(f"Fine per Sample n.{sample_id+1}")
-		fig.tight_layout()
-		fig.savefig(f"results/Confidence_Sample_{sample_id + 1}.jpg")
+				label_adv = attack_result['y_pred_adv'][0].item()
+
+				fig.sp.plot(itrs, scores[:, label_true], linestyle='--', c='green')
+				fig.sp.plot(itrs, scores[:, label_adv], c='red')
+				fig.sp.xlim(top=25, bottom=0)
+
+				fig.sp.title(f"Confidence Sample {sample_id + 1} - Model: {model_names[model_id]}\n"
+				             f"True Label {label_true} - Adv Label {label_adv}")
+				fig.sp.legend(['Confidence True Class', 'Confidence Adv. Class'])
+
+			print(f"Fine per Sample n.{sample_id + 1}")
+			fig.tight_layout()
+			fig.savefig(f"results/Confidence_Sample_{sample_id + 1}.jpg")
+
+
+	confidence_analysis(models, model_names, ts, dataset_labels,
+	                    "../extracted_data/data_attack_result_FNM_CONFIDENCE.pkl", num_samples=5)
