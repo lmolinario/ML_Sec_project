@@ -647,43 +647,122 @@ def confidence_analysis(models, model_names, ts, dataset_labels, results_file_co
         except Exception as e:
             print(f"❌ Errore generale nella generazione della confidence per il Sample {sample_id + 1}: {e}")
 
-def plot_comparison(original, adv_AA, adv_FMN, title, sample_idx):
-	"""
-	Visualizza immagini originali, attaccate da AutoAttack e FMN,
-	e le perturbazioni generate.
-	"""
-	original = original.reshape(3, 32, 32).transpose(1, 2, 0)
-	adv_AA = adv_AA.reshape(3, 32, 32).transpose(1, 2, 0)
-	adv_FMN = adv_FMN.reshape(3, 32, 32).transpose(1, 2, 0)
 
-	diff_AA = np.abs(adv_AA - original)  # Perturbazione AA
-	diff_FMN = np.abs(adv_FMN - original)  # Perturbazione FMN
+import numpy as np
+import matplotlib.pyplot as plt
+import os
 
-	# Calcolo distanza L∞ (valore massimo della differenza)
-	l_inf_AA = np.max(diff_AA)
-	l_inf_FMN = np.max(diff_FMN)
+import numpy as np
+import matplotlib.pyplot as plt
+import os
 
-	fig, axes = plt.subplots(1, 5, figsize=(15, 5))
-	axes[0].imshow(convert_image(original))
-	axes[0].set_title("Original")
+def plot_comparison(original, adv_AA, adv_FMN, title, sample_idx, dataset_labels, y_true, y_pred_AA, y_pred_FMN):
+    """
+    Visualizza immagini originali, attaccate da AutoAttack e FMN,
+    e le perturbazioni generate. Inoltre, salva i casi in cui
+    FMN ha successo e AutoAttack no.
+    """
+    # Riorganizza le immagini nel formato (H, W, C)
+    original = original.reshape(3, 32, 32).transpose(1, 2, 0)
+    adv_AA = adv_AA.reshape(3, 32, 32).transpose(1, 2, 0)
+    adv_FMN = adv_FMN.reshape(3, 32, 32).transpose(1, 2, 0)
 
-	axes[1].imshow(convert_image(adv_AA))
-	axes[1].set_title(f"AutoAttack\nL∞={l_inf_AA:.4f}")
+    diff_AA = np.abs(adv_AA - original)  # Perturbazione AA
+    diff_FMN = np.abs(adv_FMN - original)  # Perturbazione FMN
 
-	axes[2].imshow(convert_image(adv_FMN))
-	axes[2].set_title(f"FMN\nL∞={l_inf_FMN:.4f}")
+    # Verifica se FMN ha modificato l'immagine
+    fmn_success = not np.all(diff_FMN == 0)
+    print(f"FMN Attack Success on Sample {sample_idx}: {fmn_success}")
 
-	axes[3].imshow(diff_AA / l_inf_AA, cmap="hot")
-	axes[3].set_title("Perturb. AA")
+    # Verifica se FMN ha modificato l'immagine
+    aa_success = not np.all(diff_AA == 0)
+    print(f"AA Attack Success on Sample {sample_idx}: {aa_success}")
 
-	axes[4].imshow(diff_FMN / l_inf_FMN, cmap="hot")
-	axes[4].set_title("Perturb. FMN")
+    # Se FMN non ha modificato nulla, impostiamo un valore di default
+    l_inf_FMN = np.max(diff_FMN, axis=(0, 1, 2)).item() if fmn_success else 0.0
+    l_inf_AA = np.max(diff_AA, axis=(0, 1, 2)).item()
 
-	for ax in axes:
-		ax.axis('off')
+    # Nome della classe dell'immagine originale
+    label_original = dataset_labels[y_true.Y[sample_idx].item()]
 
-	plt.suptitle(f"{title} - Sample {sample_idx}")
-	plt.savefig(f"results/FMNvsAA{title}.png")
+    # Nome della classe predetta dopo AutoAttack
+    label_AA = dataset_labels[y_pred_AA[sample_idx].item()]
+
+    # Nome della classe predetta dopo FMN
+    label_FMN = dataset_labels[y_pred_FMN[sample_idx].item()]
+
+    fig, axes = plt.subplots(1, 5, figsize=(15, 5))
+
+    # Immagine originale
+    axes[0].imshow(original)
+    axes[0].set_title(f"Original\nLabel: {label_original}")
+
+    # Immagine avversaria AutoAttack
+    axes[1].imshow(adv_AA)
+    axes[1].set_title(f"AutoAttack\nL∞={l_inf_AA:.4f}\nPred: {label_AA}")
+
+    # Immagine avversaria FMN
+    axes[2].imshow(adv_FMN)
+    axes[2].set_title(f"FMN\nL∞={l_inf_FMN:.4f}\nPred: {label_FMN}")
+
+    # Mappa della perturbazione di AutoAttack
+    axes[3].imshow(diff_AA / max(l_inf_AA, 1e-6), cmap="hot")
+    axes[3].set_title("Perturb. AA")
+
+    # Mappa della perturbazione di FMN (se fallisce mostra un'immagine grigia)
+    if fmn_success:
+        axes[4].imshow(diff_FMN / max(l_inf_FMN, 1e-6), cmap="hot")
+    else:
+        axes[4].imshow(np.full_like(diff_FMN, 0.5))  # Se FMN non cambia nulla, mostra un'immagine neutra
+
+    axes[4].set_title("Perturb. FMN")
+
+    for ax in axes:
+        ax.axis('off')
+
+    plt.suptitle(f"{title} - Sample {sample_idx}")
+
+    # Salvataggio del file con nome pulito
+    safe_title = title.replace(" ", "_").replace("/", "_")
+    os.makedirs("results", exist_ok=True)
+    plt.savefig(f"results/AA_Success_FMN_Fail_{safe_title}_Sample_{sample_idx}.png")
+
+
+    # 🔹 Salva i casi in cui FMN ha successo e AutoAttack no
+    if (label_FMN != label_original) and (label_AA == label_original):
+        print(f"📌 Caso speciale: FMN ha successo mentre AutoAttack no (Sample {sample_idx})")
+
+        fig, axes = plt.subplots(1, 3, figsize=(12, 5))
+
+        axes[0].imshow(original)
+        axes[0].set_title(f"Original\nLabel: {label_original}")
+
+        axes[1].imshow(adv_AA)
+        axes[1].set_title(f"AutoAttack\nL∞={l_inf_AA:.4f}\nPred: {label_AA}")
+
+        axes[2].imshow(adv_FMN)
+        axes[2].set_title(f"FMN\nL∞={l_inf_FMN:.4f}\nPred: {label_FMN}")
+
+        # Mappa della perturbazione di FMN (se fallisce mostra un'immagine grigia)
+        if aa_success:
+        # Mappa della perturbazione di AutoAttack
+            axes[3].imshow(diff_AA / max(l_inf_AA, 1e-6), cmap="hot")
+
+        else:
+            axes[3].imshow(np.full_like(diff_AA, 0.5))  # Se FMN non cambia nulla, mostra un'immagine neutra
+
+        axes[3].set_title("Perturb. AA")
+
+        axes[4].imshow(diff_FMN / max(l_inf_FMN, 1e-6), cmap="hot")
+        axes[4].set_title("Perturb. FMN")
+
+        for ax in axes:
+	        ax.axis('off')
+
+        plt.suptitle(f"FMN Success vs AutoAttack Failure - Sample {sample_idx}")
+        plt.savefig(f"results/FMN_Success_AA_Fail_{safe_title}_Sample_{sample_idx}.png")
+
+
 
 if __name__ == "__main__":
 
@@ -870,6 +949,11 @@ if __name__ == "__main__":
 		adv_images_FMN = results_FMN_data[model_idx]['result']['adv_ds'].X.tondarray()
 		original_images = results_FMN_data[model_idx]['result']['adv_ds'].X.tondarray()
 
+		adv_predict_label_AA = results_AA_data[model_idx]['y_pred_adv']
+		adv_predict_label_FMN = results_FMN_data[model_idx]['result']['y_pred_adv']
+
+
+
 		count = 0
 		for idx in indices:
 			if count >= num_samples_to_display:
@@ -879,17 +963,17 @@ if __name__ == "__main__":
 			adv_AA = adv_images_AA[idx]
 			adv_FMN = adv_images_FMN[idx]
 
-			plot_comparison(original, adv_AA, adv_FMN, model_name, idx)
+			plot_comparison(original, adv_AA, adv_FMN, model_name, idx, dataset_labels, ts,adv_predict_label_AA, adv_predict_label_FMN)
 
 			count += 1
 
 
 
 	### Analisi di Explainability ###
-	explainability_analysis(models, model_names, results_FMN_data, ts, dataset_labels, input_shape)
+	#explainability_analysis(models, model_names, results_FMN_data, ts, dataset_labels, input_shape)
 
 	### Analisi della Confidence ###
-	confidence_analysis(models, model_names, ts, dataset_labels,results_file_confidence="extracted_data/data_attack_result_FMN_CONFIDENCE.pkl", num_samples=5)
+	#confidence_analysis(models, model_names, ts, dataset_labels,results_file_confidence="extracted_data/data_attack_result_FMN_CONFIDENCE.pkl", num_samples=5)
 
 	print("\n✅ Fine dell'esecuzione!")
 
