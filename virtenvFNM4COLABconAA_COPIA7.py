@@ -730,7 +730,7 @@ if __name__ == "__main__":
 		]
 		save_results(results_file_AA, results_AA_data)
 
-	print(results_AA_data)
+
 	# Accuratezza dopo attacco AutoAttack
 	print("\n📉 Accuratezza dei modelli sotto attacco AutoAttack:")
 	print("-" * 90)
