@@ -28,9 +28,9 @@ Contains definition of global variables
 """
 
 # Percorsi dei file per salvare i risultati degli attacchi
-results_file_AA = "extracted_data/data_attack_result_AA.pkl"
-results_file_FNM = 'extracted_data/data_attack_result_FMN.pkl'
-results_file_confidence = 'extracted_data/data_attack_result_FMN_CONFIDENCE.pkl'
+results_file_AA = "../extracted_data/data_attack_result_AA.pkl"
+results_file_FNM = '../extracted_data/data_attack_result_FMN.pkl'
+results_file_confidence = '../extracted_data/data_attack_result_FMN_CONFIDENCE.pkl'
 
 # Forma dell'input (canali, altezza, larghezza) per i modelli di deep learning
 input_shape = (3, 32, 32)
@@ -328,27 +328,28 @@ def save_results(file_path, data):
 def convert_image(image):
     """
     Converte un'immagine da CArray o NumPy in formato (H, W, C).
+
+    Parametri:
+    - image (CArray o ndarray): Immagine da convertire.
+
+    Ritorna:
+    - ndarray: Immagine nel formato (altezza, larghezza, canali).
     """
     try:
         # Se l'immagine è un CArray, convertila in NumPy
         if hasattr(image, "tondarray"):
             image = image.tondarray()
 
-        # Se l'immagine è un array 1D con dimensione 3072, deve essere trasformata
-        if image.shape == (1, 3072) or image.shape == (3072,):
-            image = image.reshape(3, 32, 32)
-
-        # Controlla nuovamente la dimensione
+        # Assicurarsi che l'immagine abbia le dimensioni corrette prima della trasposizione
         if image.shape != input_shape:
             raise ValueError(f"Dimensioni errate: attese {input_shape}, trovate {image.shape}")
 
         # Converti l'immagine da (C, H, W) a (H, W, C)
-        return image.transpose(1, 2, 0)
+        return image.reshape(input_shape).transpose(1, 2, 0)
 
     except Exception as e:
         print(f"⚠️ Errore nella conversione dell'immagine: {e}")
         return None  # Ritorna None in caso di errore
-
 
 
 def show_image(fig, local_idx, img, img_adv, expl, label, pred):
@@ -580,7 +581,7 @@ def confidence_analysis(models, model_names, ts, dataset_labels, results_file_co
     - None: Salva i grafici delle confidence.
     """
 
-    print("\n📊 Analisi della confidence per i campioni attaccati...")
+    print("📊 Avvio del calcolo e plot della CONFIDENCE")
 
     # Caricamento o generazione dei risultati
     CONFIDENCE_results_FNM = load_results(results_file_confidence)
@@ -595,7 +596,7 @@ def confidence_analysis(models, model_names, ts, dataset_labels, results_file_co
     # Itera sui primi `num_samples` campioni
     for sample_id in range(num_samples):
         try:
-            print(f"\n🔍 Generazione del plot della Confidence per il Sample n.{sample_id + 1}")
+            print(f"\n🔍 Generazione del plot per il Sample n.{sample_id + 1}")
 
             # Creazione della figura per visualizzare la confidence per ogni modello
             fig = CFigure(width=30, height=4, fontsize=10, linewidth=2)
@@ -725,28 +726,26 @@ if __name__ == "__main__":
 		print(f"⚠️ Il file '{results_file_AA}' non esiste o è corrotto. Generando nuovi risultati...")
 		results_AA = [
 			{'model_name': name,
-			 'result': AA_attack(ts.X, ts.Y, model, CExplainerIntegratedGradients, len(dataset_labels))}
+			 'result': results_AA(ts.X, ts.Y, model, CExplainerIntegratedGradients, len(dataset_labels))}
 			for model, name in zip(models, model_names)
 		]
 		save_results(results_file_AA, results_AA)
 
-	print(results_AA)
 	# Accuratezza dopo attacco AutoAttack
 	print("\n📉 Accuratezza dei modelli sotto attacco AutoAttack:")
 	print("-" * 90)
 	for result in results_AA:
 		print(
-			f"Model name: {result['model_name']:<40} - Accuracy under AA attack: {(result['accuracy_under_attack'] * 100):.2f} %")
+			f"Model name: {result['model_name']:<40} - Accuracy under AA attack: {(result['result']['accuracy_under_attack'] * 100):.2f} %")
 	print("-" * 90)
 
 	### Analisi di Explainability ###
+	print("\n🧐 Avvio dell'analisi di explainability...")
 	explainability_analysis(models, model_names, results_FNM, ts, dataset_labels, input_shape)
 
 	### Analisi della Confidence ###
+	print("\n📊 Analisi della confidence per i campioni attaccati...")
 	confidence_analysis(models, model_names, ts, dataset_labels,
-	                    results_file_confidence="extracted_data/data_attack_result_FMN_CONFIDENCE.pkl", num_samples=5)
+	                    results_file_confidence="../extracted_data/data_attack_result_FMN_CONFIDENCE.pkl", num_samples=5)
 
 	print("\n✅ Fine dell'esecuzione!")
-
-
-

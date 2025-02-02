@@ -28,9 +28,9 @@ Contains definition of global variables
 """
 
 # Percorsi dei file per salvare i risultati degli attacchi
-results_file_AA = "extracted_data/data_attack_result_AA.pkl"
-results_file_FNM = 'extracted_data/data_attack_result_FMN.pkl'
-results_file_confidence = 'extracted_data/data_attack_result_FMN_CONFIDENCE.pkl'
+results_file_AA = "../extracted_data/data_attack_result_AA.pkl"
+results_file_FNM = '../extracted_data/data_attack_result_FMN.pkl'
+results_file_confidence = '../extracted_data/data_attack_result_FMN_CONFIDENCE.pkl'
 
 # Forma dell'input (canali, altezza, larghezza) per i modelli di deep learning
 input_shape = (3, 32, 32)
@@ -739,217 +739,14 @@ if __name__ == "__main__":
 			f"Model name: {result['model_name']:<40} - Accuracy under AA attack: {(result['accuracy_under_attack'] * 100):.2f} %")
 	print("-" * 90)
 
-
-
-
-
-
-
-
-
-
-
-	#################################################################################################################
-
-	import numpy as np
-	import matplotlib.pyplot as plt
-
-	import numpy as np
-	import matplotlib.pyplot as plt
-
-
-	def compare_attacks(results_FNM, results_AA, ts, dataset_labels):
-		"""
-		Confronta i risultati degli attacchi FMN e AutoAttack per identificare i campioni
-		per cui un attacco ha avuto successo e l'altro no.
-
-		Parametri:
-		- results_FNM (list): Risultati dell'attacco FMN.
-		- results_AA (list): Risultati dell'attacco AutoAttack.
-		- ts (CDataset): Dataset originale con le immagini e le etichette.
-		- dataset_labels (list): Etichette delle classi del dataset.
-
-		Ritorna:
-		- None: Visualizza i risultati e salva le immagini di confronto.
-		"""
-
-		mismatched_samples = []  # Campioni in cui gli attacchi hanno esiti diversi
-
-		for i in range(len(results_FNM)):
-			model_name = results_FNM[i]['model_name']
-			y_true = ts.Y  # Etichette reali
-
-			# Predizioni avversarie per entrambi gli attacchi
-			y_pred_fmn = results_FNM[i]['result']['y_pred_adv']
-			y_pred_aa = results_AA[i]['y_pred_adv']
-
-			# Convertire in array NumPy per operazioni logiche sicure
-			y_true_np = y_true.tondarray()
-			y_pred_fmn_np = y_pred_fmn.tondarray()
-			y_pred_aa_np = y_pred_aa.tondarray()
-
-			# Identificare i campioni per cui un attacco ha successo e l'altro no
-			differing_samples = np.where((y_pred_fmn_np == y_true_np) & (y_pred_aa_np != y_true_np))[0]
-			differing_samples = np.concatenate((
-				differing_samples,
-				np.where((y_pred_fmn_np != y_true_np) & (y_pred_aa_np == y_true_np))[0]
-			))
-
-			if len(differing_samples) > 0:
-				mismatched_samples.append((model_name, differing_samples))
-
-				print(f"📌 Modello: {model_name} - Campioni con esito diverso tra FMN e AA: {len(differing_samples)}")
-
-				# Visualizzazione dei primi 3 esempi con risultati contrastanti
-				fig, axs = plt.subplots(len(differing_samples[:3]), 4, figsize=(12, 8))
-				fig.suptitle(f'Confronto FMN vs AA per il modello {model_name}', fontsize=16)
-
-				for j, sample_idx in enumerate(differing_samples[:3]):
-					# Estrai immagini e converti in formato corretto
-					img = ts.X[sample_idx, :].tondarray().reshape(3, 32, 32).transpose(1, 2, 0)
-					img_fmn = results_FNM[i]['result']['adv_ds'].X[sample_idx, :].tondarray().reshape(3, 32,
-					                                                                                  32).transpose(1,
-					                                                                                                2,
-					                                                                                                0)
-					img_aa = results_AA[i]['x_adv'].tondarray()[sample_idx, :].reshape(3, 32, 32).transpose(1, 2, 0)
-
-					# Differenze di perturbazione
-					diff_fmn = np.abs(img_fmn - img)
-					diff_aa = np.abs(img_aa - img)
-
-					axs[j, 0].imshow(img)
-					axs[j, 0].set_title(f"Originale: {dataset_labels[y_true_np[sample_idx]]}")
-					axs[j, 0].axis('off')
-
-					axs[j, 1].imshow(img_fmn)
-					axs[j, 1].set_title(f"FMN Pred: {dataset_labels[y_pred_fmn_np[sample_idx]]}")
-					axs[j, 1].axis('off')
-
-					axs[j, 2].imshow(img_aa)
-					axs[j, 2].set_title(f"AA Pred: {dataset_labels[y_pred_aa_np[sample_idx]]}")
-					axs[j, 2].axis('off')
-
-					axs[j, 3].imshow(np.abs(diff_fmn - diff_aa), cmap="coolwarm")
-					axs[j, 3].set_title("Diff. FMN vs AA")
-					axs[j, 3].axis('off')
-
-				plt.tight_layout()
-				plt.savefig(f"results/Comparison_FMN_AA_{model_name}.jpg")
-
-
-		print("✅ Confronto completato.")
-
-
-	# Esegui la funzione con i risultati degli attacchi
-	compare_attacks(results_FNM, results_AA, ts, dataset_labels)
-
-'''
-
-Motivazioni per cui un Attacco può Fallire
-
-Dopo aver individuato i campioni con risultati contrastanti, possiamo fare alcune ipotesi sulle motivazioni per cui un attacco può fallire:
-
-	FMN può generare perturbazioni più piccole
-		FMN è progettato per trovare la minima perturbazione che induce un errore. Se la perturbazione necessaria supera il budget (ε = 8/255), l'attacco potrebbe fallire.
-
-	AutoAttack utilizza una strategia più aggressiva
-		AutoAttack combina più metodi (PGD, APGD, Square Attack) ed è più probabile che trovi un punto debole nel modello.
-
-	La robustezza del modello può influenzare gli attacchi in modo diverso
-		Alcuni modelli potrebbero essere più vulnerabili a perturbazioni sparse (come Square Attack di AutoAttack) rispetto a perturbazioni minimali (come FMN).
-
-	Diverse classi possono avere sensibilità diverse agli attacchi
-		Analizzando i risultati per classe, possiamo scoprire se certe classi sono più facili da attaccare con un metodo rispetto all'altro.
-
-
-	'''
-
-import numpy as np
-import matplotlib.pyplot as plt
-
-
-def visualize_adversarial_comparison(results_FNM, results_AA, ts, dataset_labels, num_samples=3):
-	"""
-	Visualizza le immagini originali e le rispettive versioni avversarie generate da FMN e AutoAttack.
-
-	Parametri:
-	- results_FNM (list): Risultati dell'attacco FMN.
-	- results_AA (list): Risultati dell'attacco AutoAttack.
-	- ts (CDataset): Dataset originale con le immagini e le etichette.
-	- dataset_labels (list): Etichette delle classi del dataset.
-	- num_samples (int): Numero di campioni da visualizzare per modello.
-
-	Ritorna:
-	- None: Mostra le immagini e salva i risultati.
-	"""
-
-	for i in range(len(results_FNM)):
-		model_name = results_FNM[i]['model_name']
-		y_true = ts.Y.tondarray()  # Etichette reali
-
-		# Ottieni le predizioni
-		y_pred_fmn = results_FNM[i]['result']['y_pred_adv'].tondarray()
-		y_pred_aa = results_AA[i]['y_pred_adv'].tondarray()
-
-		# Seleziona alcuni campioni per la visualizzazione
-		differing_samples = np.where((y_pred_fmn != y_true) | (y_pred_aa != y_true))[0][:num_samples]
-
-		if len(differing_samples) > 0:
-			print(f"📌 Visualizzazione delle immagini per il modello: {model_name}")
-
-			fig, axs = plt.subplots(len(differing_samples), 4, figsize=(12, 8))
-			fig.suptitle(f'Confronto FMN vs AA - {model_name}', fontsize=16)
-
-			for j, sample_idx in enumerate(differing_samples):
-				# Estrai immagini originali e avversarie
-				img = ts.X[sample_idx, :].tondarray().reshape(3, 32, 32).transpose(1, 2, 0)
-				img_fmn = results_FNM[i]['result']['adv_ds'].X[sample_idx, :].tondarray().reshape(3, 32, 32).transpose(
-					1, 2, 0)
-				img_aa = results_AA[i]['x_adv'].tondarray()[sample_idx, :].reshape(3, 32, 32).transpose(1, 2, 0)
-
-				# Calcolo delle perturbazioni
-				diff_fmn = np.abs(img_fmn - img)
-				diff_aa = np.abs(img_aa - img)
-				perturbation_diff = np.abs(diff_fmn - diff_aa)
-
-				# Mostra le immagini
-				axs[j, 0].imshow(img)
-				axs[j, 0].set_title(f"Originale: {dataset_labels[y_true[sample_idx]]}")
-				axs[j, 0].axis('off')
-
-				axs[j, 1].imshow(img_fmn)
-				axs[j, 1].set_title(f"FMN Pred: {dataset_labels[y_pred_fmn[sample_idx]]}")
-				axs[j, 1].axis('off')
-
-				axs[j, 2].imshow(img_aa)
-				axs[j, 2].set_title(f"AA Pred: {dataset_labels[y_pred_aa[sample_idx]]}")
-				axs[j, 2].axis('off')
-
-				axs[j, 3].imshow(perturbation_diff, cmap="coolwarm")
-				axs[j, 3].set_title("Diff. FMN vs AA")
-				axs[j, 3].axis('off')
-
-			plt.tight_layout()
-			plt.savefig(f"results/Comparison1_FMN_AA_{model_name}.jpg")
-			plt.show()
-
-	print("✅ Visualizzazione completata.")
-
-
-# Esegui la funzione per analizzare le differenze visive tra FMN e AutoAttack
-visualize_adversarial_comparison(results_FNM, results_AA, ts, dataset_labels)
-
-#################################################################################################################3
-
-
 	### Analisi di Explainability ###
-#	explainability_analysis(models, model_names, results_FNM, ts, dataset_labels, input_shape)
+	explainability_analysis(models, model_names, results_FNM, ts, dataset_labels, input_shape)
 
 	### Analisi della Confidence ###
-#	confidence_analysis(models, model_names, ts, dataset_labels,
-#	                    results_file_confidence="extracted_data/data_attack_result_FMN_CONFIDENCE.pkl", num_samples=5)
+	confidence_analysis(models, model_names, ts, dataset_labels,
+	                    results_file_confidence="../extracted_data/data_attack_result_FMN_CONFIDENCE.pkl", num_samples=5)
 
-#	print("\n✅ Fine dell'esecuzione!")
+	print("\n✅ Fine dell'esecuzione!")
 
 
 

@@ -358,3 +358,102 @@ La **perturbazione** misura quanto è stato modificato il campione originale per
 📌 **Strategia ideale:** confrontare la riduzione della confidenza e l'ammontare della perturbazione per vedere **quale attacco è più efficace con la minore perturbazione possibile**.
 
 🚀 **Vuoi che analizziamo insieme un caso specifico?**
+
+
+
+I dati forniti sono **coerenti con lo stato dell'arte** per l'analisi di attacchi avversariali, in particolare per il confronto tra **AutoAttack** e **FMN** su modelli robusti. Tuttavia, ci sono alcuni punti chiave da considerare:
+
+---
+
+### **🔹 Coerenza dei Risultati con lo Stato dell'Arte**
+1. **AutoAttack è generalmente più efficace di FMN**
+   - In quasi tutti i campioni, **AutoAttack modifica la predizione** mentre **FMN fallisce**.
+   - Questo è coerente con lo stato dell'arte: **AutoAttack** è un attacco più aggressivo e ottimizzato rispetto a **FMN**, che punta alla minima perturbazione.
+
+2. **Confidenze delle predizioni**
+   - Quando **AutoAttack ha successo**, la sua confidenza è **maggiore** rispetto a FMN.
+   - FMN, se fallisce, mantiene la predizione sulla classe originale, **il che porta a una confidenza più bassa**.
+   - Questo comportamento è atteso: **AutoAttack cerca il fallimento del modello**, mentre **FMN cerca la minima perturbazione per ingannarlo**.
+
+3. **Resistenza dei modelli**
+   - **Ding2020MMA e Wong2020Fast** subiscono alterazioni più frequentemente, il che indica che, sebbene siano modelli robusti, **AutoAttack riesce a bypassarli più facilmente rispetto a FMN**.
+   - **FMN potrebbe essere più utile nei casi in cui si vuole testare la robustezza con attacchi meno invasivi**.
+
+---
+
+### **🔹 Verifica di Coerenza con lo Stato dell'Arte**
+**📌 Possiamo verificare la robustezza dei modelli attraverso due criteri:**
+1. **Tasso di successo degli attacchi**
+   - **AutoAttack ha successo su quasi tutti i campioni discordanti**, il che è atteso data la sua efficacia.
+   - **FMN fallisce nella maggior parte dei casi**, mantenendo la predizione originale.
+   
+2. **Differenza di confidenza tra AutoAttack e FMN**
+   - Se **AutoAttack ha successo**, la sua confidenza dovrebbe essere più alta.
+   - Se **FMN fallisce**, la sua confidenza rimane vicina a quella della predizione originale.
+   - Questo comportamento è osservato nei dati riportati.
+
+---
+
+### **🔹 Conclusione**
+✅ **I risultati sono coerenti con lo stato dell'arte** nel confronto tra AutoAttack e FMN.  
+✅ **AutoAttack è più aggressivo e ha una maggiore probabilità di successo rispetto a FMN.**  
+✅ **FMN fallisce più spesso perché minimizza la perturbazione, il che può essere utile per valutare la resistenza naturale del modello.**  
+
+Se vuoi ulteriori analisi o confronti con altri attacchi (ad es. **PGD, CW, DeepFool**), possiamo integrare metriche di successo e analisi grafica per una valutazione più approfondita. 🚀
+
+
+
+Il caso del **Campione 28** mostra un comportamento interessante nella competizione tra **AutoAttack (AA)** e **Fast-Minimum-Norm (FMN)**. Analizziamo i dati:
+
+### **🔹 Dati forniti**
+- **Confidenza AA**: `0.103128`
+- **Confidenza FMN**: `0.423806`
+- **Etichetta reale**: `'truck'`
+- **Etichetta avversariale AA**: `'cat'`
+- **Etichetta avversariale FMN**: `'truck'` (cioè FMN non ha alterato la classe)
+- **Motivazioni identificate**:
+  - ✅ **AutoAttack ha avuto successo nel modificare la classe, mentre FMN ha fallito.**
+  - **FMN ha generato una predizione più sicura rispetto ad AutoAttack.**
+
+---
+
+### **🔹 Interpretazione del Risultato**
+1. **AutoAttack ha trovato una perturbazione sufficiente a ingannare il modello**, facendolo predire `'cat'` invece di `'truck'`.  
+   - Questo significa che **AutoAttack è stato efficace nel generare un'immagine avversariale** che cambia la classe di output.
+  
+2. **FMN ha fallito nel cambiare la predizione**:  
+   - L'attacco FMN è progettato per **minimizzare la perturbazione** necessaria per ingannare il modello.  
+   - In questo caso, **la perturbazione minima richiesta per ingannare il modello potrebbe essere troppo alta rispetto alla soglia imposta da FMN**, quindi l'attacco ha fallito e la predizione è rimasta `'truck'`.
+
+3. **Confidenza FMN > Confidenza AA**  
+   - **Confidenza FMN = 0.423806** è più alta della confidenza AA **(0.103128)**.  
+   - Questo suggerisce che **FMN non ha alterato l'immagine in modo significativo**, quindi il modello è ancora "sicuro" nella sua decisione originale di classificare l'immagine come `'truck'`.  
+   - **AutoAttack**, invece, ha generato una predizione più incerta (**0.103128**), suggerendo che la perturbazione introdotta per ingannare il modello ha anche ridotto la sicurezza della sua decisione.
+
+---
+
+### **🔹 Confronto con lo Stato dell'Arte**
+- **AutoAttack è noto per essere più aggressivo e potente**, capace di trovare una perturbazione che altera la predizione con maggiore successo rispetto a FMN.
+- **FMN è più conservativo**, progettato per generare **perturbazioni minime** e spesso può fallire nel caso in cui **la minima perturbazione richiesta per un cambio di classe sia superiore alla soglia di ottimizzazione**.
+- Il comportamento osservato qui è **atteso e coerente con la letteratura sugli attacchi avversariali**.
+
+---
+
+### **🔹 Possibili Azioni per Confermare il Risultato**
+1. **Analizzare la distanza L∞ tra l'immagine originale e le immagini avversariali (AA e FMN)**  
+   - Se la distanza per AA è molto maggiore rispetto a FMN, significa che AA ha usato una perturbazione più intensa per alterare la predizione, mentre FMN non ha potuto applicare una perturbazione sufficiente.
+   
+2. **Visualizzare le immagini avversariali**  
+   - Confrontare le immagini generate da **AA e FMN** per vedere se l'attacco AA ha introdotto **cambiamenti visibili**, mentre FMN ha lasciato l'immagine quasi invariata.
+
+3. **Testare con un attacco intermedio**  
+   - Provare un attacco meno aggressivo di AA ma più flessibile di FMN, come **PGD (Projected Gradient Descent)**, per vedere se riesce a modificare la predizione.
+
+---
+
+### **🔹 Conclusione**
+✅ **AutoAttack ha successo, FMN no** → atteso, dato che FMN minimizza la perturbazione.  
+✅ **Confidenza più alta per FMN** → atteso, poiché l'immagine è rimasta più simile all'originale.  
+✅ **Possibili conferme con analisi visiva e della distanza L∞**.  
+
+Questi risultati supportano la robustezza del modello rispetto ad attacchi con perturbazioni limitate (FMN), ma dimostrano che attacchi più aggressivi (AA) possono ancora avere successo. 🚀

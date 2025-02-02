@@ -28,9 +28,9 @@ Contains definition of global variables
 """
 
 # Percorsi dei file per salvare i risultati degli attacchi
-results_file_AA = "extracted_data/data_attack_result_AA.pkl"
-results_file_FMN = 'extracted_data/data_attack_result_FMN.pkl'
-results_file_confidence = 'extracted_data/data_attack_result_FMN_CONFIDENCE.pkl'
+results_file_AA = "../extracted_data/data_attack_result_AA.pkl"
+results_file_FMN = '../extracted_data/data_attack_result_FMN.pkl'
+results_file_confidence = '../extracted_data/data_attack_result_FMN_CONFIDENCE.pkl'
 
 # Forma dell'input (canali, altezza, larghezza) per i modelli di deep learning
 input_shape = (3, 32, 32)

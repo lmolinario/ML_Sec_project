@@ -30,9 +30,9 @@ Contains definition of global variables
 """
 
 # Percorsi dei file per salvare i risultati degli attacchi
-results_file_AA = "extracted_data/data_attack_result_AA.pkl"
-results_file_FMN = 'extracted_data/data_attack_result_FMN.pkl'
-results_file_confidence = 'extracted_data/data_attack_result_FMN_CONFIDENCE.pkl'
+results_file_AA = "../extracted_data/data_attack_result_AA.pkl"
+results_file_FMN = '../extracted_data/data_attack_result_FMN.pkl'
+results_file_confidence = '../extracted_data/data_attack_result_FMN_CONFIDENCE.pkl'
 
 # Forma dell'input (canali, altezza, larghezza) per i modelli di deep learning
 input_shape = (3, 32, 32)
@@ -722,7 +722,7 @@ def plot_comparison(original, adv_AA, adv_FMN, title, sample_idx, dataset_labels
         plt.suptitle(f"{title} - Sample {sample_idx} ({case})")
 
         # Salvataggio
-        os.makedirs("results", exist_ok=True)
+        os.makedirs("../results", exist_ok=True)
         safe_title = title.replace(" ", "_").replace("/", "_")
         plt.savefig(f"results/{filename}_{safe_title}_Sample_{sample_idx}.png")
         plt.close(fig)  # Chiude la figura per risparmiare memoria
@@ -810,7 +810,7 @@ def plot_comparison1(original, adv_AA, adv_FMN, title, sample_idx, dataset_label
 
     # Salvataggio del file con nome pulito
     safe_title = title.replace(" ", "_").replace("/", "_")
-    os.makedirs("results", exist_ok=True)
+    os.makedirs("../results", exist_ok=True)
     plt.savefig(f"results/AA_Success_FMN_Fail_{safe_title}_Sample_{sample_idx}.png")
 
 
@@ -958,8 +958,11 @@ if __name__ == "__main__":
         conf_AA = CSoftmax().softmax(scores_AA)
         confidence_AA.append(conf_AA)
 
-    print("✅ Confidenza per AutoAttack calcolata con successo!")
+    print("✅ Confidenza per AutoAttack calcolata con successo!\n\n\n")
 
+
+
+    print("Identifying samples for which one attack succeeds while the other fails!")
     # Identificazione dei campioni con risultati discordanti
     mismatched_samples = {}
     for model_idx, model_name in enumerate(model_names):
@@ -980,11 +983,14 @@ if __name__ == "__main__":
         differing_indices = [
             idx for idx in range(y_pred_AA.shape[0])
             if (y_pred_AA[idx] != y_pred_FMN[idx]) and
-               (y_pred_AA[idx] != y_true[idx] or y_pred_FMN[idx] != y_true[idx])
+               (y_pred_AA[idx] == y_true[idx] or y_pred_FMN[idx] == y_true[idx])
         ]
 
         for idx in differing_indices:
-            print(f"Campione {idx}: Etichetta Reale={dataset_labels[y_true[idx]]}, Etichetta Adv_AA={dataset_labels[y_pred_AA[idx]]}, Etichetta Adv_FMN={dataset_labels[y_pred_FMN[idx]]}")
+            print(f"Campione {idx}:"
+                  f" Etichetta Reale={dataset_labels[y_true[idx]]},"
+                  f" Etichetta Adv_AA={dataset_labels[y_pred_AA[idx]]},"
+                  f" Etichetta Adv_FMN={dataset_labels[y_pred_FMN[idx]]}")
 
         #print(f"Campioni discordanti trovati per {model_name}: {differing_indices}")
 
@@ -992,6 +998,7 @@ if __name__ == "__main__":
         mismatched_samples[model_name] = differing_indices
         print(f"Campioni discordanti per {model_name}: {len(differing_indices)}")
 
+    print('mismatched_samples',mismatched_samples)
 
 
     #################################################################################################################
@@ -1052,6 +1059,8 @@ if __name__ == "__main__":
     print('Confidence_AA_4_sample',Confidence_AA_4_sample)
 
     print('Confidence_FMN_4_sample',Confidence_FMN_4_sample)
+    
+    '''
 
     import numpy as np
 
@@ -1083,6 +1092,7 @@ if __name__ == "__main__":
 
             # Stampa dei risultati
             print(f"- Campione {idx}:")
+            print(f"  Etichetta reale: '{label_original}'\n  Etichetta Avvesariale FNM: '{label_FMN}'\n  Etichetta Avvesariale AA: '{label_AA}' ")
             print(f"  L∞ Perturbazione - AA: {linf_AA:.4f}, FMN: {linf_FMN:.4f}")
 
             # Confronto tra le perturbazioni
@@ -1099,118 +1109,131 @@ if __name__ == "__main__":
     print("\n📊 Risultati della perturbazione L∞:")
     print("Perturbazione L∞:", Perturbation_Linf)
 
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    # Numero massimo di campioni da visualizzare
+    max_samples = 3
+
+    for model_name, indices in Perturbation_Linf.items():
+        model_idx = model_name_to_idx[model_name]  # Indice del modello
+        print(f"\n📊 Visualizzazione per il modello: {model_name}")
+
+        count = 0  # Contatore per limitare il numero di campioni
+
+        for idx in list(indices.keys()):
+            if count >= max_samples:
+                break
+
+            # Caricamento immagini originali e avversarie
+            x_orig = ts.X[idx, :].tondarray().squeeze().reshape(input_shape)
+            x_adv_AA = results_AA_data[model_idx]['x_adv'][idx, :].tondarray().squeeze().reshape(input_shape)
+            x_adv_FMN = results_FMN_data[model_idx]['result']['adv_ds'].X[idx, :].tondarray().squeeze().reshape(
+                input_shape)
+
+            # Calcolo della perturbazione L∞
+            linf_AA = float(Perturbation_Linf[model_name][idx]['AA'])
+            linf_FMN = float(Perturbation_Linf[model_name][idx]['FMN'])
+
+            # Recupero delle confidenze
+            conf_AA = float(Confidence_AA_4_sample[model_name][idx].item()) if idx in Confidence_AA_4_sample[
+                model_name] else None
+            conf_FMN = float(Confidence_FMN_4_sample[model_name][idx].item()) if idx in Confidence_FMN_4_sample[
+                model_name] else None
+
+            # Calcolo delle perturbazioni
+            perturbation_AA = np.abs(x_adv_AA - x_orig)
+            perturbation_FMN = np.abs(x_adv_FMN - x_orig)
+
+            # Normalizzazione per una migliore visibilità delle perturbazioni
+            perturbation_AA = perturbation_AA / np.max(perturbation_AA) if np.max(
+                perturbation_AA) > 0 else np.zeros_like(perturbation_AA)
+            perturbation_FMN = perturbation_FMN / np.max(perturbation_FMN) if np.max(
+                perturbation_FMN) > 0 else np.zeros_like(perturbation_FMN)
+
+            # Recupero delle etichette delle classi
+            label_original = dataset_labels[ts.Y[idx].item()]
+            label_AA = dataset_labels[results_AA_data[model_idx]['y_pred_adv'][idx].item()]
+            label_FMN = dataset_labels[results_FMN_data[model_idx]['result']['y_pred_adv'][idx].item()]
+
+            # Verifica del successo degli attacchi
+            attack_AA_success = label_AA != label_original
+            attack_FMN_success = label_FMN != label_original
+
+            # **Creazione dell'explainer Integrated Gradients**
+            explainer = CExplainerIntegratedGradients(models[model_idx])  # Ora inizializzato correttamente
+
+            # **Calcolo delle spiegazioni per le immagini avversarie (Fix del problema)**
+            explain_AA = explainer.explain(CArray(x_adv_AA[None, :]),
+                                           CArray([results_AA_data[model_idx]['y_pred_adv'][idx].item()]))
+            explain_FMN = explainer.explain(CArray(x_adv_FMN[None, :]),
+                                            CArray([results_FMN_data[model_idx]['result']['y_pred_adv'][idx].item()]))
+
+            print("Explain AA shape:", explain_AA.shape)
+            print("Explain FMN shape:", explain_FMN.shape)
+
+            # Normalizzazione delle spiegazioni per la visualizzazione
+            explain_AA = explain_AA.tondarray().squeeze()  # Rimuove dimensioni extra
+            explain_FMN = explain_FMN.tondarray().squeeze()
+
+            print("Explain AA shape:", explain_AA.shape)
+            print("Explain FMN shape:", explain_FMN.shape)
+
+            # Rimodellare le spiegazioni alla dimensione corretta
+            explain_AA = explain_AA.reshape(input_shape)  # input_shape = (3, 32, 32)
+            explain_FMN = explain_FMN.reshape(input_shape)
+
+            print("Explain AA shape:", explain_AA.shape)
+            print("Explain FMN shape:", explain_FMN.shape)
 
 
+            # Se un attacco ha successo e l'altro no, plottiamo il campione
+            if attack_AA_success != attack_FMN_success:
+                fig, axes = plt.subplots(3, 3, figsize=(15, 12))
 
-import numpy as np
-import matplotlib.pyplot as plt
+                # **Riga 1: Immagini originali e avversarie**
+                axes[0, 0].imshow(x_orig.transpose(1, 2, 0))
+                axes[0, 0].set_title(f"Originale\nClasse: {label_original}")
+                axes[0, 0].axis("off")
 
-# Numero massimo di campioni da visualizzare
-max_samples = 3
+                axes[0, 1].imshow(x_adv_AA.transpose(1, 2, 0))
+                axes[0, 1].set_title(f"Avversaria AA ({label_AA})\nConf: {conf_AA:.4f}")
+                axes[0, 1].axis("off")
 
-for model_name, indices in Perturbation_Linf.items():
-    model_idx = model_name_to_idx[model_name]  # Indice del modello
-    print(f"\n📊 Visualizzazione per il modello: {model_name}")
+                axes[0, 2].imshow(x_adv_FMN.transpose(1, 2, 0))
+                axes[0, 2].set_title(f"Avversaria FMN ({label_FMN})\nConf: {conf_FMN:.4f}")
+                axes[0, 2].axis("off")
 
-    count = 0  # Contatore per limitare il numero di campioni
+                # **Riga 2: Perturbazioni**
+                axes[1, 0].axis("off")  # Slot vuoto per migliorare l'allineamento
 
-    for idx in list(indices.keys()):
-        if count >= max_samples:
-            break
+                axes[1, 1].imshow(perturbation_AA.transpose(1, 2, 0), cmap="inferno")
+                axes[1, 1].set_title(f"Perturbazione AA\nL∞: {linf_AA:.4f}")
+                axes[1, 1].axis("off")
 
-        # Caricamento immagini originali e avversarie
-        x_orig = ts.X[idx, :].tondarray().squeeze().reshape(input_shape)
-        x_adv_AA = results_AA_data[model_idx]['x_adv'][idx, :].tondarray().squeeze().reshape(input_shape)
-        x_adv_FMN = results_FMN_data[model_idx]['result']['adv_ds'].X[idx, :].tondarray().squeeze().reshape(input_shape)
+                axes[1, 2].imshow(perturbation_FMN.transpose(1, 2, 0), cmap="inferno")
+                axes[1, 2].set_title(f"Perturbazione FMN\nL∞: {linf_FMN:.4f}")
+                axes[1, 2].axis("off")
 
-        # Calcolo della perturbazione L∞
-        linf_AA = float(Perturbation_Linf[model_name][idx]['AA'])
-        linf_FMN = float(Perturbation_Linf[model_name][idx]['FMN'])
+                # **Riga 3: Spiegabilità (Integrated Gradients)**
+                axes[2, 0].axis("off")  # Slot vuoto per migliorare l'allineamento
 
-        # Recupero delle confidenze
-        conf_AA = float(Confidence_AA_4_sample[model_name][idx].item()) if idx in Confidence_AA_4_sample[model_name] else None
-        conf_FMN = float(Confidence_FMN_4_sample[model_name][idx].item()) if idx in Confidence_FMN_4_sample[model_name] else None
+                axes[2, 1].imshow(explain_AA.transpose(1, 2, 0), cmap="coolwarm")
+                axes[2, 1].set_title(f"Explain AA ({label_AA})")
+                axes[2, 1].axis("off")
 
-        # Calcolo delle perturbazioni
-        perturbation_AA = np.abs(x_adv_AA - x_orig)
-        perturbation_FMN = np.abs(x_adv_FMN - x_orig)
+                axes[2, 2].imshow(explain_FMN.transpose(1, 2, 0), cmap="coolwarm")
+                axes[2, 2].set_title(f"Explain FMN ({label_FMN})")
+                axes[2, 2].axis("off")
 
-        # Normalizzazione per una migliore visibilità delle perturbazioni
-        perturbation_AA = perturbation_AA / np.max(perturbation_AA) if np.max(perturbation_AA) > 0 else np.zeros_like(perturbation_AA)
-        perturbation_FMN = perturbation_FMN / np.max(perturbation_FMN) if np.max(perturbation_FMN) > 0 else np.zeros_like(perturbation_FMN)
+                plt.suptitle(f"Confronto Attacchi - {model_name} - Campione {idx}")
 
-        # Recupero delle etichette delle classi
-        label_original = dataset_labels[ts.Y[idx].item()]
-        label_AA = dataset_labels[results_AA_data[model_idx]['y_pred_adv'][idx].item()]
-        label_FMN = dataset_labels[results_FMN_data[model_idx]['result']['y_pred_adv'][idx].item()]
+                # Salvataggio della figura
+                plt.savefig(f'avv_{model_name}_sample{idx}.png')
 
-        # Verifica del successo degli attacchi
-        attack_AA_success = label_AA != label_original
-        attack_FMN_success = label_FMN != label_original
+                count += 1  # Aumenta il contatore per il limite di visualizzazione
 
-        # **Correzione: Creazione dell'explainer Integrated Gradients**
-        explainer = CExplainerIntegratedGradients()
-        explainer.set_model(models[model_idx])  # Assegnazione corretta del modello
-
-        # **Calcolo delle spiegazioni per le immagini avversarie**
-        explain_AA = explainer.explain(CArray(x_adv_AA))
-        explain_FMN = explainer.explain(CArray(x_adv_FMN))
-
-        # Normalizzazione delle spiegazioni per la visualizzazione
-        explain_AA = explain_AA.tondarray() / np.max(np.abs(explain_AA.tondarray()))
-        explain_FMN = explain_FMN.tondarray() / np.max(np.abs(explain_FMN.tondarray()))
-
-        # Se un attacco ha successo e l'altro no, plottiamo il campione
-        if attack_AA_success != attack_FMN_success:
-            fig, axes = plt.subplots(3, 3, figsize=(15, 12))
-
-            # **Riga 1: Immagini originali e avversarie**
-            axes[0, 0].imshow(x_orig.transpose(1, 2, 0))
-            axes[0, 0].set_title(f"Originale\nClasse: {label_original}")
-            axes[0, 0].axis("off")
-
-            axes[0, 1].imshow(x_adv_AA.transpose(1, 2, 0))
-            axes[0, 1].set_title(f"Avversaria AA ({label_AA})\nConf: {conf_AA:.4f}")
-            axes[0, 1].axis("off")
-
-            axes[0, 2].imshow(x_adv_FMN.transpose(1, 2, 0))
-            axes[0, 2].set_title(f"Avversaria FMN ({label_FMN})\nConf: {conf_FMN:.4f}")
-            axes[0, 2].axis("off")
-
-            # **Riga 2: Perturbazioni**
-            axes[1, 0].axis("off")  # Slot vuoto per migliorare l'allineamento
-
-            axes[1, 1].imshow(perturbation_AA.transpose(1, 2, 0), cmap="inferno")
-            axes[1, 1].set_title(f"Perturbazione AA\nL∞: {linf_AA:.4f}")
-            axes[1, 1].axis("off")
-
-            axes[1, 2].imshow(perturbation_FMN.transpose(1, 2, 0), cmap="inferno")
-            axes[1, 2].set_title(f"Perturbazione FMN\nL∞: {linf_FMN:.4f}")
-            axes[1, 2].axis("off")
-
-            # **Riga 3: Spiegabilità (Integrated Gradients)**
-            axes[2, 0].axis("off")  # Slot vuoto per migliorare l'allineamento
-
-            axes[2, 1].imshow(explain_AA.transpose(1, 2, 0), cmap="coolwarm")
-            axes[2, 1].set_title(f"Explain AA ({label_AA})")
-            axes[2, 1].axis("off")
-
-            axes[2, 2].imshow(explain_FMN.transpose(1, 2, 0), cmap="coolwarm")
-            axes[2, 2].set_title(f"Explain FMN ({label_FMN})")
-            axes[2, 2].axis("off")
-
-            plt.suptitle(f"Confronto Attacchi - {model_name} - Campione {idx}")
-
-            # Salvataggio della figura
-            plt.savefig(f'avv_{model_name}_sample{idx}.png')
-
-            count += 1  # Aumenta il contatore per il limite di visualizzazione
-
-
-
-
-
-'''    ### Analisi di Explainability ###
+   ### Analisi di Explainability ###
     explainability_analysis(models, model_names, results_FMN_data, ts, dataset_labels, input_shape)
 
 
