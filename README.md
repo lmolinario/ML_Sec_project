@@ -322,3 +322,39 @@ Abbiamo verificato i **campioni in cui FMN ha successo mentre AutoAttack no**, m
 🔹 **Testare su altri dataset (es. ImageNet) per confermare la generalizzabilità dei risultati.**  
 
 Se vuoi possiamo **esplorare più a fondo alcuni campioni o testare altre varianti degli attacchi**. 🚀
+
+
+
+
+Per valutare un attacco adversariale, devi considerare **sia la confidenza che la perturbazione**, a seconda dell'aspetto che vuoi analizzare. Ecco una guida su come interpretarle:
+
+---
+
+## **📌 Quando considerare la CONFIDENZA?**
+La **confidenza del modello** indica quanto il modello è sicuro della sua previsione, quindi è utile per valutare l'efficacia di un attacco in termini di:
+1. **Evasione del modello** 🛑 → Se un attacco riesce a ridurre la confidenza della classe corretta o ad aumentare quella della classe sbagliata.
+2. **Stabilità del modello** 📉 → Se il modello mantiene alta confidenza anche su campioni perturbati, potrebbe essere più robusto.
+3. **Difficoltà dell'attacco** ⚠️ → Se la confidenza rimane alta nonostante la perturbazione, significa che il modello è più difficile da attaccare.
+
+> **Esempio:** Se un modello classificava un'immagine come "gatto" con il 99% di confidenza prima dell'attacco, e dopo AutoAttack la confidenza sulla classe errata è diventata del 90%, significa che l'attacco è stato molto efficace.
+
+---
+
+## **📌 Quando considerare la PERTURBAZIONE?**
+La **perturbazione** misura quanto è stato modificato il campione originale per generare l'immagine adversariale. È utile per valutare:
+1. **Efficienza dell'attacco** ⚡ → Un attacco che induce errore con una perturbazione minore è più efficace.
+2. **Percettibilità dell'attacco** 👀 → Se la perturbazione è visibile a occhio umano, l'attacco potrebbe essere meno stealthy.
+3. **Robustezza del modello** 🏋️‍♂️ → Se il modello resiste a grandi perturbazioni senza cambiare output, è più robusto.
+
+> **Esempio:** Se FMN riesce a far sbagliare il modello con una perturbazione molto piccola rispetto ad AutoAttack, allora FMN è più efficiente in termini di modifica minima.
+
+---
+
+## **🔍 Cosa considerare in un’analisi completa?**
+- **Se vuoi valutare quanto un attacco riesce a far sbagliare il modello** → Guarda la **confidenza**.
+- **Se vuoi misurare l'efficienza e la stealthiness dell'attacco** → Guarda la **perturbazione**.
+- **Se vuoi confrontare due attacchi (es. FMN vs AutoAttack)** → Analizza **entrambi** i fattori.
+
+📌 **Strategia ideale:** confrontare la riduzione della confidenza e l'ammontare della perturbazione per vedere **quale attacco è più efficace con la minore perturbazione possibile**.
+
+🚀 **Vuoi che analizziamo insieme un caso specifico?**

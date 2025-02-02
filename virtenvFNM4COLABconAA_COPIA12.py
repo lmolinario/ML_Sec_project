@@ -1099,89 +1099,118 @@ if __name__ == "__main__":
     print("\n📊 Risultati della perturbazione L∞:")
     print("Perturbazione L∞:", Perturbation_Linf)
 
-    #################################################################################################################
-''' 
-    # 🔹 Visualizzazione dei campioni discordanti
-    num_samples_to_display = 5  # Numero massimo di esempi per modello
-    for model_name, indices in mismatched_samples.items():
-        print(f"\n📊 Visualizzazione per il modello: {model_name}")
-        model_idx = model_name_to_idx[model_name]  # Recupera indice modello
-
-        adv_images_AA = results_AA_data[model_idx]['x_adv'].tondarray()
-        adv_images_FMN = results_FMN_data[model_idx]['result']['adv_ds'].X.tondarray()
-        original_images = results_FMN_data[model_idx]['result']['adv_ds'].X.tondarray()
-
-        adv_predict_label_AA = results_AA_data[model_idx]['y_pred_adv']
-        adv_predict_label_FMN = results_FMN_data[model_idx]['result']['y_pred_adv']
-
-        for idx in indices:
-            # Recupera le confidence corrette per il modello e il campione
-            conf_AA = Confidence_AA_4_sample.get(model_name, {}).get(idx, "N/A")
-            conf_FMN = Confidence_FMN_4_sample.get(model_name, {}).get(idx, "N/A")
-
-            # Chiama la funzione plot_comparison passando le confidence corrette
-            plot_comparison(
-                original_images[idx], adv_images_AA[idx], adv_images_FMN[idx],
-                model_name, idx, dataset_labels, ts, y_pred_AA, y_pred_FMN,
-                conf_AA, conf_FMN
-            )
 
 
 
+import numpy as np
+import matplotlib.pyplot as plt
 
-########################################################################################################################################################################################################################################################################################################
-    import matplotlib.pyplot as plt
-    import numpy as np
+# Numero massimo di campioni da visualizzare
+max_samples = 3
+
+for model_name, indices in Perturbation_Linf.items():
+    model_idx = model_name_to_idx[model_name]  # Indice del modello
+    print(f"\n📊 Visualizzazione per il modello: {model_name}")
+
+    count = 0  # Contatore per limitare il numero di campioni
+
+    for idx in list(indices.keys()):
+        if count >= max_samples:
+            break
+
+        # Caricamento immagini originali e avversarie
+        x_orig = ts.X[idx, :].tondarray().squeeze().reshape(input_shape)
+        x_adv_AA = results_AA_data[model_idx]['x_adv'][idx, :].tondarray().squeeze().reshape(input_shape)
+        x_adv_FMN = results_FMN_data[model_idx]['result']['adv_ds'].X[idx, :].tondarray().squeeze().reshape(input_shape)
+
+        # Calcolo della perturbazione L∞
+        linf_AA = float(Perturbation_Linf[model_name][idx]['AA'])
+        linf_FMN = float(Perturbation_Linf[model_name][idx]['FMN'])
+
+        # Recupero delle confidenze
+        conf_AA = float(Confidence_AA_4_sample[model_name][idx].item()) if idx in Confidence_AA_4_sample[model_name] else None
+        conf_FMN = float(Confidence_FMN_4_sample[model_name][idx].item()) if idx in Confidence_FMN_4_sample[model_name] else None
+
+        # Calcolo delle perturbazioni
+        perturbation_AA = np.abs(x_adv_AA - x_orig)
+        perturbation_FMN = np.abs(x_adv_FMN - x_orig)
+
+        # Normalizzazione per una migliore visibilità delle perturbazioni
+        perturbation_AA = perturbation_AA / np.max(perturbation_AA) if np.max(perturbation_AA) > 0 else np.zeros_like(perturbation_AA)
+        perturbation_FMN = perturbation_FMN / np.max(perturbation_FMN) if np.max(perturbation_FMN) > 0 else np.zeros_like(perturbation_FMN)
+
+        # Recupero delle etichette delle classi
+        label_original = dataset_labels[ts.Y[idx].item()]
+        label_AA = dataset_labels[results_AA_data[model_idx]['y_pred_adv'][idx].item()]
+        label_FMN = dataset_labels[results_FMN_data[model_idx]['result']['y_pred_adv'][idx].item()]
+
+        # Verifica del successo degli attacchi
+        attack_AA_success = label_AA != label_original
+        attack_FMN_success = label_FMN != label_original
+
+        # **Correzione: Creazione dell'explainer Integrated Gradients**
+        explainer = CExplainerIntegratedGradients()
+        explainer.set_model(models[model_idx])  # Assegnazione corretta del modello
+
+        # **Calcolo delle spiegazioni per le immagini avversarie**
+        explain_AA = explainer.explain(CArray(x_adv_AA))
+        explain_FMN = explainer.explain(CArray(x_adv_FMN))
+
+        # Normalizzazione delle spiegazioni per la visualizzazione
+        explain_AA = explain_AA.tondarray() / np.max(np.abs(explain_AA.tondarray()))
+        explain_FMN = explain_FMN.tondarray() / np.max(np.abs(explain_FMN.tondarray()))
+
+        # Se un attacco ha successo e l'altro no, plottiamo il campione
+        if attack_AA_success != attack_FMN_success:
+            fig, axes = plt.subplots(3, 3, figsize=(15, 12))
+
+            # **Riga 1: Immagini originali e avversarie**
+            axes[0, 0].imshow(x_orig.transpose(1, 2, 0))
+            axes[0, 0].set_title(f"Originale\nClasse: {label_original}")
+            axes[0, 0].axis("off")
+
+            axes[0, 1].imshow(x_adv_AA.transpose(1, 2, 0))
+            axes[0, 1].set_title(f"Avversaria AA ({label_AA})\nConf: {conf_AA:.4f}")
+            axes[0, 1].axis("off")
+
+            axes[0, 2].imshow(x_adv_FMN.transpose(1, 2, 0))
+            axes[0, 2].set_title(f"Avversaria FMN ({label_FMN})\nConf: {conf_FMN:.4f}")
+            axes[0, 2].axis("off")
+
+            # **Riga 2: Perturbazioni**
+            axes[1, 0].axis("off")  # Slot vuoto per migliorare l'allineamento
+
+            axes[1, 1].imshow(perturbation_AA.transpose(1, 2, 0), cmap="inferno")
+            axes[1, 1].set_title(f"Perturbazione AA\nL∞: {linf_AA:.4f}")
+            axes[1, 1].axis("off")
+
+            axes[1, 2].imshow(perturbation_FMN.transpose(1, 2, 0), cmap="inferno")
+            axes[1, 2].set_title(f"Perturbazione FMN\nL∞: {linf_FMN:.4f}")
+            axes[1, 2].axis("off")
+
+            # **Riga 3: Spiegabilità (Integrated Gradients)**
+            axes[2, 0].axis("off")  # Slot vuoto per migliorare l'allineamento
+
+            axes[2, 1].imshow(explain_AA.transpose(1, 2, 0), cmap="coolwarm")
+            axes[2, 1].set_title(f"Explain AA ({label_AA})")
+            axes[2, 1].axis("off")
+
+            axes[2, 2].imshow(explain_FMN.transpose(1, 2, 0), cmap="coolwarm")
+            axes[2, 2].set_title(f"Explain FMN ({label_FMN})")
+            axes[2, 2].axis("off")
+
+            plt.suptitle(f"Confronto Attacchi - {model_name} - Campione {idx}")
+
+            # Salvataggio della figura
+            plt.savefig(f'avv_{model_name}_sample{idx}.png')
+
+            count += 1  # Aumenta il contatore per il limite di visualizzazione
 
 
-    def plot_confidence_comparison(conf_AA, conf_FMN):
-        """
-        Plotta la differenza di confidence tra AutoAttack e FMN per i campioni discordanti.
-        """
-
-        for model_name in conf_AA.keys():
-            if not conf_AA[model_name]:  # Se non ci sono dati per il modello, lo saltiamo
-                continue
-
-            sample_ids = list(conf_AA[model_name].keys())  # Campioni discordanti
-            conf_AA_values = [conf_AA[model_name][idx].item() for idx in sample_ids]  # Converti in float
-            conf_FMN_values = [conf_FMN[model_name][idx].item() for idx in sample_ids]  # Converti in float
-
-            # Creazione del grafico a barre
-            x = np.arange(len(sample_ids))  # Indici dei campioni
-
-            fig, ax = plt.subplots(figsize=(10, 5))
-            width = 0.35  # Larghezza delle barre
-
-            rects1 = ax.bar(x - width / 2, conf_AA_values, width, label='AutoAttack', color='red')
-            rects2 = ax.bar(x + width / 2, conf_FMN_values, width, label='FMN', color='blue')
-
-            # Label e titoli
-            ax.set_xlabel('Campione')
-            ax.set_ylabel('Confidence')
-            ax.set_title(f'Confronto Confidence AA vs FMN - {model_name}')
-            ax.set_xticks(x)
-            ax.set_xticklabels(sample_ids)
-            ax.legend()
-
-            # Mostra i valori sopra le barre
-            for rect in rects1 + rects2:
-                height = rect.get_height()
-                ax.annotate(f'{height:.2f}',
-                            xy=(rect.get_x() + rect.get_width() / 2, height),
-                            xytext=(0, 3),  # Offset sopra la barra
-                            textcoords="offset points",
-                            ha='center', va='bottom')
-
-            plt.show()
 
 
-    # Esegui la funzione di visualizzazione
-    plot_confidence_comparison(Confidence_AA_4_sample, Confidence_FMN_4_sample)
 
-##############################################################################################################################################################################################
-
-    ### Analisi di Explainability ###
+'''    ### Analisi di Explainability ###
     explainability_analysis(models, model_names, results_FMN_data, ts, dataset_labels, input_shape)
 
 
