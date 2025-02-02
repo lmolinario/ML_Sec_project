@@ -595,7 +595,7 @@ def confidence_analysis(models, model_names, ts, dataset_labels, results_file_co
     # Iterate over the first `num_samples` samples
     for sample_id in range(num_samples):
         try:
-            print(f"\n🔍 Generating Confidence plot for Sample No. {sample_id + 1}")
+            print(f"\nGenerating Confidence plot for Sample No. {sample_id + 1}")
 
             # Create a figure to visualize confidence for each model
             fig = CFigure(width=30, height=4, fontsize=10, linewidth=2)
@@ -641,7 +641,7 @@ def confidence_analysis(models, model_names, ts, dataset_labels, results_file_co
                 except Exception as e:
                     print(f"Error processing confidence for model {model_name}, Sample {sample_id + 1}: {e}")
 
-            print(f"✅ Generation completed for Sample No. {sample_id + 1}")
+            print(f"Generation completed for Sample No. {sample_id + 1}")
 
             # Save the plot
             fig.tight_layout()
@@ -1110,7 +1110,7 @@ if __name__ == "__main__":
 
     ### Confidence Analysis ###
     confidence_analysis(models, model_names, ts, dataset_labels,
-                        results_file_confidence="extracted_data/data_attack_result_FMN_CONFIDENCE.pkl", num_samples=5)
+                        results_file_confidence="/content/data_attack_result_FMN_CONFIDENCE.pkl", num_samples=5)
 
     print("\n✅ Execution completed!")
 
