@@ -18,13 +18,15 @@ This project is developed for the UNICA.IT University Machine Learning Security 
 
 ***
 ## Installation
-### Before running it, make sure you have Python 3.10 installed for compatibility between all libraries.
+
+### On your local machine
+#### Before running it, make sure you have Python 3.10 installed for compatibility between all libraries.
 
 - Download the ZIP code or clone the repository with
   ```bash
   git clone https://github.com/lmolinario/ML_Sec_project.git
   ```
-- Enter inside a repository dire`ctory and `install the requirements with
+- Enter inside a repository directory and `install the requirements with
 
   ```bash
   pip3 install -r requirements.txt
@@ -34,7 +36,15 @@ This project is developed for the UNICA.IT University Machine Learning Security 
   ```bash
   python3.10 entrypoint.py
   ```
-
+### Directly on colab
+- click on the file `pyenv310_COLAB.ipynb`, directly from the code of this repository 
+- or directly on this link
+	https://colab.research.google.com/github/lmolinario/ML_Sec_project/blob/main/pyenv310_COLAB.ipynb
+	and then run the notebook
+ 
+  ```bash
+  python3.10 entrypoint.py
+  ```
 ## Project goal
 The goal of this project is to re-evaluate 5 RobustBench models using another attack algorithm (e.g., FMN) and identify samples for which one attack succeeds while the other fails. In other words, we aim to compare the effectiveness of different attacks against robust models, to analyze in which cases one type of attack is effective while another fails, thus contributing to a deeper understanding of the robustness of models and attack algorithms.
 scrivi un codice python per identificare
