@@ -22,10 +22,6 @@ from secml.ml.features.normalization import CNormalizerMinMax  # Min-Max normali
 from secml.ml.peval.metrics import CMetricAccuracy  # Accuracy metric computation
 
 
-print(f"RobustBench version: {robustbench.__name__}")
-print(f"SecML version: {secml.__version__}")
-print(f"Foolbox version: {fb.__version__}")
-print(f"Numpy version: {np.__version__}")
 """## Global Variables
 Contains definition of global variables
 """
@@ -316,7 +312,7 @@ def save_results(file_path, data):
             pickle.dump(data, f)
             f.flush()  # Force writing to disk
 
-        print(f"✅ Results successfully saved in '{file_path}'.")
+        print(f"Results successfully saved in '{file_path}'.")
 
     except (OSError, pickle.PickleError) as e:
         print(f"Error saving to '{file_path}': {e}")
@@ -683,7 +679,7 @@ def plot_comparison(original, adv_AA, adv_FMN, title, sample_idx, dataset_labels
     aa_success = label_AA != label_original
 
     print(f"Sample {sample_idx}: FMN Success = {fmn_success}, AA Success = {aa_success}")
-    print(f"   Confidence AA: {conf_AA:.4f}, Confidence FMN: {conf_FMN:.4f}")
+    print(f"Confidence AA: {conf_AA:.4f}, Confidence FMN: {conf_FMN:.4f}")
 
     # Compute L∞ perturbations
     l_inf_AA = np.max(diff_AA)
@@ -771,7 +767,7 @@ def analyze_discrepant_samples(mismatched_samples, model_names, confidence_AA, c
 
             print(f"- Sample {idx}: \n  Confidence AA={conf_AA.item()}, Confidence FMN={conf_FMN.item()}")
             print(
-                f"  True label: '{label_original}'\n  Adversarial Label FNM: '{label_FMN}'\n  Adversarial Label AA: '{label_AA}' "
+                f"True label: '{label_original}'\n  Adversarial Label FNM: '{label_FMN}'\n  Adversarial Label AA: '{label_AA}' "
             )
             print("  Possible explanations:")
 
@@ -1112,7 +1108,7 @@ if __name__ == "__main__":
     confidence_analysis(models, model_names, ts, dataset_labels,
                         results_file_confidence="/content/data_attack_result_FMN_CONFIDENCE.pkl", num_samples=5)
 
-    print("\n✅ Execution completed!")
+    print("\nExecution completed!")
 
 
 
