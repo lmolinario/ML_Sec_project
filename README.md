@@ -37,7 +37,7 @@ This project is developed for the UNICA.IT University Machine Learning Security 
   python3.10 entrypoint.py
   ```
 ### Directly on colab
-- click on the file `pyenv310_COLAB.ipynb`, directly from the code of this repository 
+- click on the file `pyenv310_COLAB.ipynb`, directly from the code of this repository and then click on ![colab image](misc/colab image.png)
 - or directly on this link
 	https://colab.research.google.com/github/lmolinario/ML_Sec_project/blob/main/pyenv310_COLAB.ipynb
 	and then run the notebook
