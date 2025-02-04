@@ -1,5 +1,5 @@
 # Machine Learning Security Project
-This project is developed for the UNICA.IT University Machine Learning Security exam. 
+This project is developed for the UNICA.IT University - Machine Learning Security exam. 
 
 > **Master's degree in Computer Engineering, Cybersecurity and Artificial Intelligence - University of Cagliari**
 

@@ -710,7 +710,7 @@ def plot_comparison(original, adv_AA, adv_FMN, title, sample_idx, dataset_labels
         plt.suptitle(f"{title} - Sample {sample_idx} ({case})")
 
         # Save the plot
-        os.makedirs("results", exist_ok=True)
+        os.makedirs("../results", exist_ok=True)
         safe_title = title.replace(" ", "_").replace("/", "_")
         plt.savefig(f"results/{filename}_{safe_title}_Sample_{sample_idx}.png")
         plt.close(fig)  # Close the figure to save memory
