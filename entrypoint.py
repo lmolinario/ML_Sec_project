@@ -50,10 +50,6 @@ dataset_labels = [
 max_subplots = 20  # Maximum number of subplots per figure (5 rows x 4 columns)
 n_cols = 4         # Fixed number of columns in plots
 
-# Maximum perturbation limit for adversarial attack (Linf norm)
-epsilon = 8 / 255  # Converts the value to [0, 1] scale
-
-
 
 def load_model(model_name):
     """
