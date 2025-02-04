@@ -3,19 +3,13 @@
 import foolbox as fb  # Foolbox library for adversarial attacks
 
 import torch  # PyTorch framework for deep learning
-
-
-
 from autoattack import AutoAttack  # AutoAttack library for adversarial robustness evaluation
-
 from secml.adv.attacks.evasion import CAttackEvasionFoolbox  # Module for adversarial attacks using Foolbox
 from secml.array import CArray  # SecML's custom array class
-
 from secml.ml.classifiers.loss import CSoftmax  # Softmax function for classification
-
 from secml.ml.peval.metrics import CMetricAccuracy  # Accuracy metric computation
 
-from entrypoint import epsilon,model_names,input_shape,models
+
 
 
 def compute_explainability(explainer_class, model, adv_ds, num_classes):

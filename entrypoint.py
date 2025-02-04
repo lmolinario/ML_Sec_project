@@ -1,17 +1,11 @@
 import os  # Module for interacting with the operating system
 import pickle  # Module for saving and loading objects
 
-import foolbox as fb  # Foolbox library for adversarial attacks
 import matplotlib.pyplot as plt  # Matplotlib for plotting
 import numpy as np  # NumPy for numerical computations
-import torch  # PyTorch framework for deep learning
 
 import robustbench  # Library for loading pre-trained robust models
-import secml  # Library for security and machine learning tools
 
-from autoattack import AutoAttack  # AutoAttack library for adversarial robustness evaluation
-
-from secml.adv.attacks.evasion import CAttackEvasionFoolbox  # Module for adversarial attacks using Foolbox
 from secml.array import CArray  # SecML's custom array class
 from secml.data.loader import CDataLoaderCIFAR10  # CIFAR-10 dataset loader
 from secml.explanation import CExplainerIntegratedGradients  # Explainability module using Integrated Gradients
@@ -746,24 +740,24 @@ def plot_perturbations(models, model_name_to_idx, dataset_labels, ts, results_AA
                 count += 1  # Increase counter for display limit
 
 if __name__ == "__main__":
-    # Caricamento dei modelli da RobustBench
+    # Loading models from RobustBench
     models = [load_model(name) for name in model_names if load_model(name) is not None]
 
     print("\nLoading CIFAR-10 dataset...")
-    # Caricamento del dataset CIFAR-10
+    # Loading the CIFAR-10 dataset
     tr, ts = CDataLoaderCIFAR10().load()
 
-    # Normalizzazione del dataset con backup dell'originale
+    # Normalizing the dataset with a backup of the original
     normalizer = CNormalizerMinMax().fit(tr.X)
-    ts_original = ts.deepcopy()  # Backup prima della normalizzazione
+    ts_original = ts.deepcopy()  # Backup before normalization
     ts.X = normalizer.transform(ts.X)
 
-    # Riduci a 64 campioni e adatta la forma delle immagini
+    # Reduce to 64 samples and adjust the image shape
     ts = ts[:n_samples, :]
     ts.X = CArray(ts.X.tondarray().reshape(-1, *input_shape))
 
     print("\nComputing model accuracy on clean data...")
-    # Calcola l'accuratezza iniziale dei modelli
+    # Compute initial model accuracy
     metric = CMetricAccuracy()
     models_preds = [clf.predict(ts.X) for clf in models]
     accuracies = [metric.performance_score(y_true=ts.Y, y_pred=y_pred) for y_pred in models_preds]
@@ -777,21 +771,21 @@ if __name__ == "__main__":
             print(f"Model {model_names[idx]} loaded successfully.")
     print("-" * 90)
 
-    # Stampa l'accuratezza iniziale dei modelli
+    # Print initial model accuracy
     print("\nModel accuracy on clean data:")
     print("-" * 90)
     for idx in range(len(model_names)):
         print(f"Model name: {model_names[idx]:<40} - Clean model accuracy: {(accuracies[idx] * 100):.2f} %")
     print("-" * 90)
 
-    ### **Esecuzione FMN Attack con Strategy Pattern** ###
+    ### **Executing FMN Attack with Strategy Pattern** ###
     print("\nLoading or generating FMN attack results...")
     results_FMN_data = load_results(results_file_FMN)
 
     if not results_FMN_data:
         print(f"The file '{results_file_FMN}' does not exist or is corrupted. Generating new results...")
 
-        attack_context = AttackContext(FMNAttackStrategy())  # Seleziona la strategia FMN
+        attack_context = AttackContext(FMNAttackStrategy())  # Select FMN strategy
         results_FMN_data = [
             {'model_name': name,
              'result': attack_context.execute_attack(ts.X, ts.Y, model, name, CExplainerIntegratedGradients,
@@ -800,7 +794,7 @@ if __name__ == "__main__":
         ]
         save_results(results_file_FMN, results_FMN_data)
 
-    # Accuratezza dopo FMN Attack
+    # Accuracy after FMN Attack
     print("\nModel accuracy under FMN attack:")
     print("-" * 90)
     for idx in range(len(model_names)):
@@ -811,15 +805,14 @@ if __name__ == "__main__":
         print(f"Model name: {model_names[idx]:<40} - Accuracy under FMN attack: {(accuracy * 100):.2f} %")
     print("-" * 90)
 
-    ### **Esecuzione AutoAttack con Strategy Pattern** ###
+    ### **Executing AutoAttack with Strategy Pattern** ###
     print("\nLoading or generating AutoAttack results...")
     results_AA_data = load_results(results_file_AA)
-
 
     if not results_AA_data:
         print(f"The file '{results_file_AA}' does not exist or is corrupted. Generating new results...")
 
-        attack_context.set_strategy(AutoAttackStrategy())  # Cambia strategia in AutoAttack
+        attack_context.set_strategy(AutoAttackStrategy())  # Switch strategy to AutoAttack
         results_AA_data = [
             {'model_name': name,
              'result': attack_context.execute_attack(ts.X, ts.Y, model, name, CExplainerIntegratedGradients,
@@ -828,7 +821,7 @@ if __name__ == "__main__":
         ]
         save_results(results_file_AA, results_AA_data)
 
-    # Accuratezza dopo AutoAttack
+    # Accuracy after AutoAttack
     print("\nModel accuracy under AutoAttack:")
     print("-" * 90)
     for result in results_AA_data:
