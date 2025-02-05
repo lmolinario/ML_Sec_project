@@ -53,7 +53,7 @@ calculated on the same epsilon (in this case epsilon = 8/255 with "L-inf" norm) 
 As indicated in our project I took as a reference the **FMN attack**, also known as FGSM (Fast Gradient Sign Method), which is one of the most common attacks against neural networks.
 The basic idea of this attack is to calculate the gradient of the model with respect to the input image and add a perturbation in the direction of the gradient to maximize the loss. This type of attack can be implemented as follows:
 
-![δ=ϵ⋅sign(∇xJ(θ,x,y))](misc/Formula FMN.png)
+![δ=ϵ⋅sign(∇xJ(θ,x,y))](misc/FormulaFMN.png)
 
 Where:
 
@@ -86,7 +86,7 @@ Limiting the distance "L∞" to a specific epsilon value ( in our case 8/255 ) h
 Adversarial attacks must be visually imperceptible to a human observer. If the perturbation exceeds a certain limit, the adversarial sample may appear distorted or artificial.
 A smaller perturbation (epsilon < 8/255 ) ensures that the changes in pixels are minimal, keeping the image visually similar to the original.
 
-Additionally, the CIFAR-10 dataset uses normalized images with pixel values ​​between 0 and 1.
+Additionally, the CIFAR-10 dataset uses normalized images with pixel values between 0 and 1.
 A value of epsilon = 8/255 represents a very small change (about 3% of the full scale), which is consistent with the idea of ​​a “sneaky” perturbation that exploits the model’s vulnerability without excessively changing the image.
 The choice of epsilon = 8/255 is not arbitrary: it is a standardized value in many adversarial attack studies, especially for models tested on CIFAR-10 with the “L∞” norm.
 It allows direct comparison of adversarial and defense results, since many benchmarks use the same bound.
