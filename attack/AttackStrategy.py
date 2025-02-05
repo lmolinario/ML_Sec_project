@@ -47,14 +47,14 @@ def compute_explainability(explainer_class, model, adv_ds, num_classes):
 
 
 class AttackStrategy:
-    """Interfaccia base per la strategia di attacco."""
+    """Basic interface for attack strategy."""
 
     def execute_attack(self, samples, labels, model, model_name, explainer_class=None, num_classes=10):
-        raise NotImplementedError("Il metodo execute_attack deve essere implementato dalle sottoclassi.")
+        raise NotImplementedError("The execute_attack method must be implemented by subclasses.")
 
 
 class AutoAttackStrategy(AttackStrategy):
-    """Implementazione dell'AutoAttack come strategia."""
+    """Implementing AutoAttack as a Strategy."""
 
     def execute_attack(self, samples, labels, model, model_name, explainer_class=None, num_classes=10):
         """
@@ -137,7 +137,7 @@ class AutoAttackStrategy(AttackStrategy):
 
 
 class FMNAttackStrategy(AttackStrategy):
-    """Implementazione dell'FMN Attack come strategia."""
+    """Implementing FMN Attack as a Strategy."""
 
     def execute_attack(self, samples, labels, model, model_name, explainer_class=None, num_classes=10):
         """
@@ -195,7 +195,7 @@ class FMNAttackStrategy(AttackStrategy):
 
 
 class AttackContext:
-    """Classe che permette di selezionare dinamicamente una strategia di attacco."""
+    """Class that allows you to dynamically select an attack strategy."""
 
     def __init__(self, strategy: AttackStrategy):
         self.strategy = strategy
