@@ -1,4 +1,4 @@
-# Machine Learning Security Project
+# Machine Learning Security -  Project 1 
 This project is developed for the UNICA.IT University - Machine Learning Security exam. 
 
 > **Master's degree in Computer Engineering, Cybersecurity and Artificial Intelligence - University of Cagliari**
@@ -17,7 +17,7 @@ This project is developed for the UNICA.IT University - Machine Learning Securit
 
 
 ***
-## Installation
+## **Installation** 
 
 ### On your local machine
 #### Before running it, make sure you have Python 3.10 installed for compatibility between all libraries.
@@ -26,7 +26,7 @@ This project is developed for the UNICA.IT University - Machine Learning Securit
   ```bash
   git clone https://github.com/lmolinario/ML_Sec_project.git
   ```
-- Enter inside a repository directory and `install the requirements with
+- Enter inside a repository directory and install the requirements with
 
   ```bash
   pip3 install -r requirements.txt
@@ -42,18 +42,15 @@ This project is developed for the UNICA.IT University - Machine Learning Securit
 	https://colab.research.google.com/github/lmolinario/ML_Sec_project/blob/main/pyenv310_COLAB.ipynb
 	and then run the notebook
 
-## Project goal
-The goal of this project is to re-evaluate 5 RobustBench models using another attack algorithm (e.g., FMN) and identify samples for which one attack succeeds while the other fails. In other words, we aim to compare the effectiveness of different attacks against robust models, to analyze in which cases one type of attack is effective while another fails, thus contributing to a deeper understanding of the robustness of models and attack algorithms.
-scrivi un codice python per identificare
-i campioni per i quali un attacco funziona e l'altro no. Spiegare i risultati, ovvero fornire
-alcune motivazioni sul perché uno degli attacchi non ha funzionato correttamente, mentre l'altro sì.
+## **Project goal**
+TThe goal of this project is to re-evaluate 5 RobustBench models using another attack algorithm (e.g., FMN) and identify samples for which one attack succeeds while the other fails. In other words, we aim to compare the effectiveness of different attacks against robust models, to analyze in which cases one type of attack is effective while another fails, thus contributing to a deeper understanding of the robustness of models and attack algorithms.
 
-## Solution Design
+## **Solution Design**
 To re-evaluate the FNM model, we use as a basis for comparison the results of "AutoAttack - Robustbench"
 calculated on the same epsilon (in this case epsilon = 8/255 with "L-inf" norm) and we take into account the samples that successfully perturb the image with epsilon < 8/255.
 
-#### Attack algorithm
-As indicated in our project I took as a reference the FMN attack, also known as FGSM (Fast Gradient Sign Method), which is one of the most common attacks against neural networks.
+### **Attack algorithm**
+As indicated in our project I took as a reference the **FMN attack**, also known as FGSM (Fast Gradient Sign Method), which is one of the most common attacks against neural networks.
 The basic idea of this attack is to calculate the gradient of the model with respect to the input image and add a perturbation in the direction of the gradient to maximize the loss. This type of attack can be implemented as follows:
 
 ![δ=ϵ⋅sign(∇xJ(θ,x,y))](misc/Formula FMN.png)
@@ -97,370 +94,102 @@ It allows direct comparison of adversarial and defense results, since many bench
 Generating adversarial samples with smaller “L∞” constraints requires less exploration of the perturbation space, making the attacks more efficient to compute.
 Larger perturbations may trigger model- or dataset-specific artifacts, compromising the generalizability of the results.
 
-#### Modularity: 
+### **Modularity** 
 The project is structured in a modular way to allow the replacement of attack models and algorithms without having to redo the entire flow.
 
-To do this I used to divide the code into "functions", "classes" and I used "pattern designs".
+To do this I divided the code into "functions", "classes" and used the "Strategy Design Pattern" for the attack class.
 
-#### Scalability: 
+### **Scalability**
 The system will be scalable to be able to add more RobustBench models or try different attack algorithms in the future.
 
-## Conclusions
+## **Conclusions**
+After analyzing the results of the two adversarial attacks (FMN and AutoAttack) on five RobustBench models, the following considerations can be made:
 
+FMN is designed to find the minimum perturbation needed to alter the classification. If the required perturbation exceeds the available budget (ε = 8/255), the attack can fail, leaving the prediction unchanged.
 
-Motivazioni per cui un Attacco può Fallire
+AutoAttack combines multiple attacks (PGD, APGD, Square Attack, FAB), increasing the probability of finding an effective perturbation.
+This makes it a more robust attack than FMN, which instead focuses on perturbation minimization.
 
-Dopo aver individuato i campioni con risultati contrastanti, possiamo fare alcune ipotesi sulle motivazioni per cui un attacco può fallire:
+Model robustness plays a key role
+Some models may be more resistant to minimal perturbations (FMN) but vulnerable to more aggressive perturbations (AutoAttack).
+Other models, however, may be equally vulnerable to both attacks.
 
-	FMN può generare perturbazioni più piccole
-		FMN è progettato per trovare la minima perturbazione che induce un errore. Se la perturbazione necessaria supera il budget (ε = 8/255), l'attacco potrebbe fallire.
+### **Comparison with Known Benchmarks**
 
-	AutoAttack utilizza una strategia più aggressiva
-		AutoAttack combina più metodi (PGD, APGD, Square Attack) ed è più probabile che trovi un punto debole nel modello.
+| **Models**                      | **Clean Accuracy** | **Accuracy under AutoAttack** | **Accuracy under FMN** |
+|---------------------------------|--------------------|-------------------------------|------------------------|
+| Ding2020MMA                     | ~84%               | 31.25%                        | 39.06%                 |
+| Wong2020Fast                    | ~84%               | 37.50%                        | 42.19%                 |
+| Andriushchenko2020Understanding | ~78%               | 43.75%                        | 43.75%                 |
+| Sitawarin2020Improving          | ~82%               | 39.06%                        | 39.06%                 |
+| Cui2023Decoupled_WRN-28-10      | ~93%               | 67.19%                        | 67.19%                 |
 
-	La robustezza del modello può influenzare gli attacchi in modo diverso
-		Alcuni modelli potrebbero essere più vulnerabili a perturbazioni sparse (come Square Attack di AutoAttack) rispetto a perturbazioni minimali (come FMN).
 
-	Diverse classi possono avere sensibilità diverse agli attacchi
-		Analizzando i risultati per classe, possiamo scoprire se certe classi sono più facili da attaccare con un metodo rispetto all'altro.
+### **Interpretation of Results**
+We identified **discordant samples**, i.e. those for which **FMN and AutoAttack had different results**:
 
+### **Ding2020MMA**
+- **5 discordant samples (27, 28, 31, 43, 57)**
+- **AutoAttack is more effective** in samples: `27, 31, 43, 57`
+- **FMN is more effective** in sample: `28`
+- **Motivation:**
+- AutoAttack is more effective in most cases because it finds **a more aggressive direction in the perturbation**.
+- FMN manages to outperform it in sample `28`, probably because it **minimizes the perturbation better**, finding a more subtle but still effective attack.
 
+### **Wong2020Fast**
+- **3 discordant samples (5, 16, 46)**
+- **AutoAttack more effective in all cases**
+- **Rate:**
+- For this model, AutoAttack generated more effective perturbations than FMN, which may indicate that Wong2020Fast is **more resistant to small perturbations** (like FMN), but more vulnerable to more aggressive perturbations (like AutoAttack).
 
+### **Andriushchenko2020Understanding**, **Sitawarin2020Improving**, **Cui2023Decoupled_WRN-28-10**
+- **No discordant samples**
+- **Rate:**
+- FMN and AutoAttack likely had the same effect on all samples, indicating that the model is **equally vulnerable** to both types of attacks.
 
-Interpretazione dei risultati
+### **Sample 28 Analysis**
 
-FMN e AutoAttack funzionano in modo diverso
-FMN cerca la minima perturbazione necessaria per modificare la classificazione. Se il modello è particolarmente robusto, potrebbe non essere in grado di trovare una perturbazione sufficiente.
-AutoAttack è più aggressivo e combina più tecniche, quindi potrebbe avere successo su alcuni campioni che FMN non riesce a ingannare.
+**Sample 28** showed an interesting behavior when comparing **AutoAttack (AA)** to **Fast Minimum-Norm (FMN)**.
 
-Ci sono immagini che sono più difficili da attaccare con FMN che con AutoAttack (o viceversa)
-Se AutoAttack ha successo e FMN fallisce, significa che la strategia di minima perturbazione di FMN non è sufficiente a forzare il fallimento del modello.
-Se FMN ha successo e AutoAttack fallisce, potrebbe significare che AutoAttack non riesce a trovare una buona strategia di perturbazione per quel campione specifico.
 
-Possibili spiegazioni per le differenze
-Dipendenza dalla classe: alcune classi di immagini potrebbero essere più difficili da attaccare con FMN che con AutoAttack. Effetto interruzione: AutoAttack può creare interruzioni più "dirompenti", mentre FMN lavora su piccole modifiche che potrebbero non essere sempre efficaci.
-Robustezza del modello: il modello potrebbe resistere a un attacco meglio dell'altro a seconda delle sue caratteristiche di robustezza.
+![Adv_Ding2020MMA_sample28.png](misc/Adv_Ding2020MMA_sample28.png)
 
+AutoAttack was successful in changing the class, in fact after the attack, the model classified the image as `'cat'` instead of `'truck'`.
 
+FMN failed to change the class, which indicates that the perturbation found by FMN was not sufficient to force a class change: FMN is designed to find the minimum possible perturbation, so it may have failed to pass the model's decision threshold.
 
-Ottimo! 🎉 Il codice ora funziona correttamente e sta **identificando i campioni per cui un attacco funziona mentre l'altro no**. Vediamo i **risultati ottenuti e come interpretarli**.
+FMN generated a more confident prediction than AutoAttack, in fact the model's confidence after FMN is `0.4238`, significantly higher than the confidence after AutoAttack (`0.1031`). This suggests that **FMN did not significantly alter the distribution of pixel values**, 
+leaving the model more confident in its decision. **AutoAttack, on the other hand, introduced a perturbation that confused the model, dramatically reducing its confidence in the prediction.**
 
----
+One reason could be that FMN may have encountered a difficult decision barrier since it tries to minimize the perturbation, it may not have found an effective direction to change the prediction without exceeding the threshold of ε.
 
-## **📊 Analisi dei Risultati**
-Abbiamo identificato i **campioni discordanti**, ovvero quelli per cui **FMN e AutoAttack hanno avuto risultati diversi**:
+FMN maintained higher confidence in the original class, which suggests that the attack did not significantly alter the image.
 
-### **1️⃣ Ding2020MMA**
-- **5 campioni discordanti (27, 28, 31, 43, 57)**
-- **AutoAttack più efficace** nei campioni: `27, 31, 43, 57`
-- **FMN più efficace** nel campione: `28`
-- **Motivazione:**  
-  - AutoAttack è più efficace nella maggior parte dei casi perché trova **una direzione più aggressiva nella perturbazione**.  
-  - FMN riesce a superarlo nel campione `28`, probabilmente perché **minimizza meglio la perturbazione**, trovando un attacco più sottile ma comunque efficace.
+These results are consistent with the nature of the attacks: FMN seeks the minimum perturbation, while AutoAttack is more aggressive and has a higher probability of success.
 
----
 
-### **2️⃣ Wong2020Fast**
-- **3 campioni discordanti (5, 16, 46)**
-- **AutoAttack più efficace in tutti i casi**
-- **Motivazione:**  
-  - Per questo modello, AutoAttack ha generato perturbazioni più efficaci rispetto a FMN, il che potrebbe indicare che Wong2020Fast è **più resistente a perturbazioni minime** (come quelle di FMN), ma più vulnerabile a perturbazioni più aggressive (come AutoAttack).
+### **Comparison with the State of the Art**
 
----
+The results obtained are in line with what reported in the literature on adversarial attacks:
 
-### **3️⃣ Andriushchenko2020Understanding**
-- **Nessun campione discordante**
-- **Motivazione:**  
-  - FMN e AutoAttack probabilmente hanno avuto lo stesso effetto su tutti i campioni, segnalando che il modello è **equamente vulnerabile** a entrambi i tipi di attacco.
+AutoAttack is known to be one of the strongest and most reliable attacks, while FMN was developed to find minimal perturbations, often resulting less effective than more aggressive attacks.
+More recent models (e.g. Cui2023Decoupled_WRN-28-10) show greater robustness, confirming the trends observed in RobustBench benchmarks.
+The differences in sensitivity between models are consistent with previous studies, where it was observed that some models can be more vulnerable to sparse perturbations (Square Attack) than to minimal perturbations (FMN).
 
----
+Finally, it is necessary to highlight that to evaluate an adversarial attack, **both confidence and perturbation** must be considered, depending on the aspect that you want to analyze.
 
-### **4️⃣ Sitawarin2020Improving**
-- **Nessun campione discordante**
-- **Motivazione:**  
-  - Stesso discorso di Andriushchenko2020Understanding: entrambi gli attacchi sono probabilmente ugualmente efficaci o inefficaci.
+**Model confidence** indicates how confident the model is in its prediction, so it is useful to evaluate the effectiveness of an attack in terms of:
+1. **Model evasion**: if an attack manages to reduce the confidence of the correct class or increase that of the wrong class.
+2. **Model stability**: if the model maintains high confidence even on perturbed samples, it could be more robust.
+3. **Attack difficulty**: if the confidence remains high despite the perturbation, it means that the model is more difficult to attack.
 
----
+**Perturbation** measures how much the original sample has been modified to generate the adversarial image. It is useful to evaluate:
+1. **Attack efficiency**: an attack that induces error with a smaller perturbation is more effective.
+2. **Attack perceptibility** : if the perturbation is visible to the human eye, the attack may be less stealthy.
+3. **Model robustness** : if the model withstands large perturbations without changing output, it is more robust.
 
-### **5️⃣ Cui2023Decoupled_WRN-28-10**
-- **Nessun campione discordante**
-- **Motivazione:**  
-  - Questo modello ha la più alta accuratezza sotto attacco, quindi è probabile che sia **più robusto** contro entrambi i metodi.
+A global analysis approach of both factors is desirable: compare the confidence reduction and the amount of perturbation to see **which attack is more effective with the smallest possible perturbation**.
 
----
-
-## **💡 Interpretazione Generale**
-1. **AutoAttack sembra essere più efficace di FMN nella maggior parte dei casi.**
-   - FMN ha avuto successo solo in **un caso** su Ding2020MMA.
-   - Probabilmente perché AutoAttack è **più aggressivo**, mentre FMN cerca di minimizzare la perturbazione.
-
-2. **Modelli più robusti non hanno campioni discordanti.**
-   - Modelli come `Andriushchenko2020Understanding`, `Sitawarin2020Improving` e `Cui2023Decoupled_WRN-28-10` non hanno mostrato campioni discordanti.
-   - Ciò potrebbe indicare che la loro robustezza impedisce grandi differenze tra i due attacchi.
-
-3. **Ding2020MMA e Wong2020Fast sono più vulnerabili a differenze tra attacchi.**
-   - Potrebbero avere punti deboli specifici che un attacco può sfruttare meglio dell’altro.
-
----
-
-## **🔜 Prossimi Passi**
-✔ **Visualizzare alcuni campioni discordanti**  
-  - Possiamo plottare gli esempi per capire meglio **le differenze visive nelle perturbazioni** tra FMN e AutoAttack.  
-  - Ti interessa generare delle immagini di confronto? 📊  
-
-✔ **Analizzare le perturbazioni**  
-  - Possiamo **calcolare e plottare la distanza L∞** tra immagini originali e avversarie per capire meglio la differenza tra FMN e AutoAttack.
-
-✔ **Testare altri modelli o dataset**  
-  - Se hai un altro set di modelli o dataset, possiamo fare lo stesso tipo di analisi per verificarne la robustezza.
-
----
-
-Se vuoi approfondire qualche punto, dimmi pure! 🚀
-
-
-
-Per valutare se i risultati ottenuti sono in linea con lo **stato dell'arte e il background**, possiamo confrontarli con la letteratura esistente sui modelli di RobustBench e sugli attacchi **AutoAttack** e **FMN**. Ecco un'analisi approfondita da integrare nel report:
-
----
-
-### **📚 Confronto con lo Stato dell'Arte**
-1. **AutoAttack vs. FMN nei lavori esistenti**  
-   - **AutoAttack** è noto per essere un attacco **forte e affidabile**, spesso considerato **lo standard per valutare la robustezza** dei modelli su dataset come CIFAR-10 e ImageNet.
-   - **FMN** è stato sviluppato per trovare una **soluzione di perturbazione minima**, risultando spesso **meno efficace** rispetto ad attacchi più aggressivi.
-
-   🔹 **I nostri risultati confermano quanto riportato in letteratura:**  
-   - **AutoAttack ottiene una maggiore efficacia rispetto a FMN** nella maggior parte dei modelli testati.
-   - **FMN è meno efficace su modelli altamente vulnerabili**, ma può funzionare meglio su modelli che già hanno una certa resistenza alle perturbazioni.
-
----
-
-2. **Comportamento dei modelli di RobustBench**
-   - Studi precedenti su **Ding2020MMA** e **Wong2020Fast** mostrano che questi modelli hanno una robustezza **moderata** e possono essere superati da attacchi più sofisticati.
-   - **Modelli più recenti come Cui2023Decoupled_WRN-28-10** tendono ad avere una maggiore **robustezza strutturale**, il che spiega perché non hanno campioni discordanti nei nostri esperimenti.
-
-   🔹 **I nostri risultati sono coerenti con questi studi:**
-   - **Modelli più vecchi (Ding2020MMA, Wong2020Fast) mostrano più vulnerabilità.**
-   - **Modelli più nuovi (Cui2023Decoupled_WRN-28-10) resistono meglio agli attacchi.**
-
----
-
-### **📈 Confronto con Benchmark Noti**
-| **Modello**                           | **Accuracy Pulita** | **Accuracy sotto AutoAttack** | **Accuracy sotto FMN** |
-|---------------------------------------|---------------------|------------------------------|------------------------|
-| Ding2020MMA                           | ~84%               | 31.25%                        | 39.06%                 |
-| Wong2020Fast                          | ~84%               | 37.50%                        | 42.19%                 |
-| Andriushchenko2020Understanding       | ~78%               | 43.75%                        | 43.75%                 |
-| Sitawarin2020Improving                | ~82%               | 39.06%                        | 39.06%                 |
-| Cui2023Decoupled_WRN-28-10            | ~93%               | 67.19%                        | 67.19%                 |
-
-🔹 **Osservazioni dal confronto:**  
-- **AutoAttack tende ad abbassare di più l'accuratezza rispetto a FMN.**  
-- **La differenza tra i due attacchi è significativa solo su alcuni modelli, come Ding2020MMA e Wong2020Fast.**  
-- **Modelli più robusti (es. Cui2023Decoupled_WRN-28-10) mostrano la stessa accuracy sotto entrambi gli attacchi**, segnalando che la loro robustezza è abbastanza uniforme.
-
----
-
-### **💡 Conclusioni**
-✅ **I risultati sono coerenti con la letteratura e i benchmark di RobustBench.**  
-✅ **AutoAttack si conferma il metodo più efficace, mentre FMN può funzionare bene su modelli più resistenti.**  
-✅ **La robustezza dei modelli più recenti è confermata.**  
-
-Vuoi che integri queste considerazioni direttamente nel documento? 🚀
-
-
-
-
-### **📊 Confronto con lo Stato dell'Arte e il Background**
-Dai risultati ottenuti, possiamo confrontare le prestazioni dei modelli e degli attacchi con lo **stato dell'arte** e le aspettative basate su studi precedenti.
-
----
-
-### **🔹 Confronto con Benchmark Noti**
-| **Modello**                           | **Accuracy Pulita** | **Accuracy sotto AutoAttack** | **Accuracy sotto FMN** |
-|---------------------------------------|---------------------|------------------------------|------------------------|
-| Ding2020MMA                           | **84.38%**          | **31.25%**                   | **39.06%**             |
-| Wong2020Fast                          | **84.38%**          | **37.50%**                   | **42.19%**             |
-| Andriushchenko2020Understanding       | **78.12%**          | **43.75%**                   | **43.75%**             |
-| Sitawarin2020Improving                | **82.81%**          | **39.06%**                   | **39.06%**             |
-| Cui2023Decoupled_WRN-28-10            | **93.75%**          | **67.19%**                   | **67.19%**             |
-
-**📌 Osservazioni**:
-- **AutoAttack riduce l’accuratezza più di FMN in quasi tutti i modelli**, il che è coerente con la letteratura.  
-- **Modelli più robusti (Cui2023Decoupled_WRN-28-10) mostrano meno degrado delle prestazioni**, indicando una maggiore resistenza agli attacchi.
-- **FMN sembra meno efficace nel ridurre l’accuratezza rispetto ad AutoAttack**, il che è atteso perché FMN è progettato per minimizzare la perturbazione piuttosto che massimizzare il fallimento del modello.
-
----
-
-### **🔹 Confronto con Studi Precedenti**
-1. **AutoAttack vs FMN**
-   - **AutoAttack è stato validato in diversi lavori come un attacco forte e standard per valutare la robustezza.**
-   - **FMN è più recente e ottimizzato per trovare perturbazioni minime, risultando meno distruttivo.**
-   - **I nostri risultati confermano che AutoAttack è più aggressivo, mentre FMN ha un impatto minore ma potrebbe generare perturbazioni più realistiche.**
-
-2. **Robustezza dei Modelli**
-   - **Ding2020MMA e Wong2020Fast** mostrano vulnerabilità più elevate rispetto ai modelli più recenti.
-   - **Modelli come Andriushchenko2020Understanding e Sitawarin2020Improving** hanno performance simili sotto entrambi gli attacchi, suggerendo che la loro robustezza è simile indipendentemente dall’attacco usato.
-   - **Cui2023Decoupled_WRN-28-10 è il modello più robusto, con un’accuratezza superiore al 67% anche sotto attacco**, confermando che è più resiliente.
-
----
-
-### **🔹 Confronto tra Successo e Fallimento degli Attacchi**
-Abbiamo verificato i **campioni in cui FMN ha successo mentre AutoAttack no**, ma **non abbiamo trovato nessun caso del genere**. In tutti i casi analizzati, **AutoAttack è stato più efficace di FMN**.
-
-✅ **Coerente con lo stato dell'arte**:  
-- **FMN trova perturbazioni minime** e quindi può fallire quando la soglia di decisione del modello è alta.  
-- **AutoAttack utilizza un approccio più aggressivo**, trovando perturbazioni che cambiano la predizione del modello in più casi.  
-- **Nessun campione in cui FMN ha avuto successo mentre AutoAttack no** conferma che AutoAttack è più efficace nel causare errori nei modelli.
-
----
-
-## **📌 Conclusione: I risultati sono in linea con lo stato dell'arte?**
-✅ **Sì, i risultati sono coerenti con quanto atteso dalla letteratura esistente.**  
-✅ **AutoAttack è più efficace di FMN nel ridurre l’accuratezza dei modelli.**  
-✅ **Modelli più robusti (Cui2023Decoupled_WRN-28-10) resistono meglio agli attacchi.**  
-✅ **Non ci sono casi in cui FMN supera AutoAttack, confermando che FMN è più "cauto" rispetto ad AutoAttack.**  
-
----
-
-## **🔜 Prossimi Passi**
-🔹 **Analizzare meglio perché FMN non ha cambiato nulla in alcuni campioni.**  
-🔹 **Verificare se ci sono metodi per migliorare l’efficacia di FMN (es. tuning dei parametri).**  
-🔹 **Testare su altri dataset (es. ImageNet) per confermare la generalizzabilità dei risultati.**  
-
-Se vuoi possiamo **esplorare più a fondo alcuni campioni o testare altre varianti degli attacchi**. 🚀
-
-
-
-
-Per valutare un attacco adversariale, devi considerare **sia la confidenza che la perturbazione**, a seconda dell'aspetto che vuoi analizzare. Ecco una guida su come interpretarle:
-
----
-
-## **📌 Quando considerare la CONFIDENZA?**
-La **confidenza del modello** indica quanto il modello è sicuro della sua previsione, quindi è utile per valutare l'efficacia di un attacco in termini di:
-1. **Evasione del modello** 🛑 → Se un attacco riesce a ridurre la confidenza della classe corretta o ad aumentare quella della classe sbagliata.
-2. **Stabilità del modello** 📉 → Se il modello mantiene alta confidenza anche su campioni perturbati, potrebbe essere più robusto.
-3. **Difficoltà dell'attacco** ⚠️ → Se la confidenza rimane alta nonostante la perturbazione, significa che il modello è più difficile da attaccare.
-
-> **Esempio:** Se un modello classificava un'immagine come "gatto" con il 99% di confidenza prima dell'attacco, e dopo AutoAttack la confidenza sulla classe errata è diventata del 90%, significa che l'attacco è stato molto efficace.
-
----
-
-## **📌 Quando considerare la PERTURBAZIONE?**
-La **perturbazione** misura quanto è stato modificato il campione originale per generare l'immagine adversariale. È utile per valutare:
-1. **Efficienza dell'attacco** ⚡ → Un attacco che induce errore con una perturbazione minore è più efficace.
-2. **Percettibilità dell'attacco** 👀 → Se la perturbazione è visibile a occhio umano, l'attacco potrebbe essere meno stealthy.
-3. **Robustezza del modello** 🏋️‍♂️ → Se il modello resiste a grandi perturbazioni senza cambiare output, è più robusto.
-
-> **Esempio:** Se FMN riesce a far sbagliare il modello con una perturbazione molto piccola rispetto ad AutoAttack, allora FMN è più efficiente in termini di modifica minima.
-
----
-
-## **🔍 Cosa considerare in un’analisi completa?**
-- **Se vuoi valutare quanto un attacco riesce a far sbagliare il modello** → Guarda la **confidenza**.
-- **Se vuoi misurare l'efficienza e la stealthiness dell'attacco** → Guarda la **perturbazione**.
-- **Se vuoi confrontare due attacchi (es. FMN vs AutoAttack)** → Analizza **entrambi** i fattori.
-
-📌 **Strategia ideale:** confrontare la riduzione della confidenza e l'ammontare della perturbazione per vedere **quale attacco è più efficace con la minore perturbazione possibile**.
-
-🚀 **Vuoi che analizziamo insieme un caso specifico?**
-
-
-
-I dati forniti sono **coerenti con lo stato dell'arte** per l'analisi di attacchi avversariali, in particolare per il confronto tra **AutoAttack** e **FMN** su modelli robusti. Tuttavia, ci sono alcuni punti chiave da considerare:
-
----
-
-### **🔹 Coerenza dei Risultati con lo Stato dell'Arte**
-1. **AutoAttack è generalmente più efficace di FMN**
-   - In quasi tutti i campioni, **AutoAttack modifica la predizione** mentre **FMN fallisce**.
-   - Questo è coerente con lo stato dell'arte: **AutoAttack** è un attacco più aggressivo e ottimizzato rispetto a **FMN**, che punta alla minima perturbazione.
-
-2. **Confidenze delle predizioni**
-   - Quando **AutoAttack ha successo**, la sua confidenza è **maggiore** rispetto a FMN.
-   - FMN, se fallisce, mantiene la predizione sulla classe originale, **il che porta a una confidenza più bassa**.
-   - Questo comportamento è atteso: **AutoAttack cerca il fallimento del modello**, mentre **FMN cerca la minima perturbazione per ingannarlo**.
-
-3. **Resistenza dei modelli**
-   - **Ding2020MMA e Wong2020Fast** subiscono alterazioni più frequentemente, il che indica che, sebbene siano modelli robusti, **AutoAttack riesce a bypassarli più facilmente rispetto a FMN**.
-   - **FMN potrebbe essere più utile nei casi in cui si vuole testare la robustezza con attacchi meno invasivi**.
-
----
-
-### **🔹 Verifica di Coerenza con lo Stato dell'Arte**
-**📌 Possiamo verificare la robustezza dei modelli attraverso due criteri:**
-1. **Tasso di successo degli attacchi**
-   - **AutoAttack ha successo su quasi tutti i campioni discordanti**, il che è atteso data la sua efficacia.
-   - **FMN fallisce nella maggior parte dei casi**, mantenendo la predizione originale.
-   
-2. **Differenza di confidenza tra AutoAttack e FMN**
-   - Se **AutoAttack ha successo**, la sua confidenza dovrebbe essere più alta.
-   - Se **FMN fallisce**, la sua confidenza rimane vicina a quella della predizione originale.
-   - Questo comportamento è osservato nei dati riportati.
-
----
-
-### **🔹 Conclusione**
-✅ **I risultati sono coerenti con lo stato dell'arte** nel confronto tra AutoAttack e FMN.  
-✅ **AutoAttack è più aggressivo e ha una maggiore probabilità di successo rispetto a FMN.**  
-✅ **FMN fallisce più spesso perché minimizza la perturbazione, il che può essere utile per valutare la resistenza naturale del modello.**  
-
-Se vuoi ulteriori analisi o confronti con altri attacchi (ad es. **PGD, CW, DeepFool**), possiamo integrare metriche di successo e analisi grafica per una valutazione più approfondita. 🚀
-
-
-
-Il caso del **Campione 28** mostra un comportamento interessante nella competizione tra **AutoAttack (AA)** e **Fast-Minimum-Norm (FMN)**. Analizziamo i dati:
-
-### **🔹 Dati forniti**
-- **Confidenza AA**: `0.103128`
-- **Confidenza FMN**: `0.423806`
-- **Etichetta reale**: `'truck'`
-- **Etichetta avversariale AA**: `'cat'`
-- **Etichetta avversariale FMN**: `'truck'` (cioè FMN non ha alterato la classe)
-- **Motivazioni identificate**:
-  - ✅ **AutoAttack ha avuto successo nel modificare la classe, mentre FMN ha fallito.**
-  - **FMN ha generato una predizione più sicura rispetto ad AutoAttack.**
-
----
-
-### **🔹 Interpretazione del Risultato**
-1. **AutoAttack ha trovato una perturbazione sufficiente a ingannare il modello**, facendolo predire `'cat'` invece di `'truck'`.  
-   - Questo significa che **AutoAttack è stato efficace nel generare un'immagine avversariale** che cambia la classe di output.
-  
-2. **FMN ha fallito nel cambiare la predizione**:  
-   - L'attacco FMN è progettato per **minimizzare la perturbazione** necessaria per ingannare il modello.  
-   - In questo caso, **la perturbazione minima richiesta per ingannare il modello potrebbe essere troppo alta rispetto alla soglia imposta da FMN**, quindi l'attacco ha fallito e la predizione è rimasta `'truck'`.
-
-3. **Confidenza FMN > Confidenza AA**  
-   - **Confidenza FMN = 0.423806** è più alta della confidenza AA **(0.103128)**.  
-   - Questo suggerisce che **FMN non ha alterato l'immagine in modo significativo**, quindi il modello è ancora "sicuro" nella sua decisione originale di classificare l'immagine come `'truck'`.  
-   - **AutoAttack**, invece, ha generato una predizione più incerta (**0.103128**), suggerendo che la perturbazione introdotta per ingannare il modello ha anche ridotto la sicurezza della sua decisione.
-
----
-
-### **🔹 Confronto con lo Stato dell'Arte**
-- **AutoAttack è noto per essere più aggressivo e potente**, capace di trovare una perturbazione che altera la predizione con maggiore successo rispetto a FMN.
-- **FMN è più conservativo**, progettato per generare **perturbazioni minime** e spesso può fallire nel caso in cui **la minima perturbazione richiesta per un cambio di classe sia superiore alla soglia di ottimizzazione**.
-- Il comportamento osservato qui è **atteso e coerente con la letteratura sugli attacchi avversariali**.
-
----
-
-### **🔹 Possibili Azioni per Confermare il Risultato**
-1. **Analizzare la distanza L∞ tra l'immagine originale e le immagini avversariali (AA e FMN)**  
-   - Se la distanza per AA è molto maggiore rispetto a FMN, significa che AA ha usato una perturbazione più intensa per alterare la predizione, mentre FMN non ha potuto applicare una perturbazione sufficiente.
-   
-2. **Visualizzare le immagini avversariali**  
-   - Confrontare le immagini generate da **AA e FMN** per vedere se l'attacco AA ha introdotto **cambiamenti visibili**, mentre FMN ha lasciato l'immagine quasi invariata.
-
-3. **Testare con un attacco intermedio**  
-   - Provare un attacco meno aggressivo di AA ma più flessibile di FMN, come **PGD (Projected Gradient Descent)**, per vedere se riesce a modificare la predizione.
-
----
-
-### **🔹 Conclusione**
-✅ **AutoAttack ha successo, FMN no** → atteso, dato che FMN minimizza la perturbazione.  
-✅ **Confidenza più alta per FMN** → atteso, poiché l'immagine è rimasta più simile all'originale.  
-✅ **Possibili conferme con analisi visiva e della distanza L∞**.  
-
-Questi risultati supportano la robustezza del modello rispetto ad attacchi con perturbazioni limitate (FMN), ma dimostrano che attacchi più aggressivi (AA) possono ancora avere successo. 🚀
+**Examples of perturbation and confidence analysis**
+![Confidence_Sample_1.jpg](misc/Confidence_Sample_1.jpg)
+![Explainability_model_Andriushchenko2020Understanding.jpg](misc/Explainability_model_Andriushchenko2020Understanding.jpg)
