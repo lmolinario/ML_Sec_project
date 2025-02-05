@@ -42,7 +42,7 @@ This project is developed for the UNICA.IT University - Machine Learning Securit
 	https://colab.research.google.com/github/lmolinario/ML_Sec_project/blob/main/pyenv310_COLAB.ipynb
 	and then run the notebook
 
-## **Project goal**
+## **Project Goal**
 TThe goal of this project is to re-evaluate 5 RobustBench models using another attack algorithm (e.g., FMN) and identify samples for which one attack succeeds while the other fails. In other words, we aim to compare the effectiveness of different attacks against robust models, to analyze in which cases one type of attack is effective while another fails, thus contributing to a deeper understanding of the robustness of models and attack algorithms.
 
 ## **Solution Design**
