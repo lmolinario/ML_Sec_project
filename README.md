@@ -134,7 +134,7 @@ We identified **discordant samples**, i.e. those for which **FMN and AutoAttack 
 - **FMN is more effective** in sample: `28`
 - **Motivation:**
 - AutoAttack is more effective in most cases because it finds **a more aggressive direction in the perturbation**.
-- FMN manages to outperform it in sample `28`, probably because it **minimizes the perturbation better**, finding a more subtle but still effective attack.
+- FMN manages to outperform it in sample `28`, probably because it **minimizes the perturbation better**, although it fails.
 
 ### **Wong2020Fast**
 - **3 discordant samples (5, 16, 46)**
