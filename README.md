@@ -79,7 +79,7 @@ Depending on the type of norm chosen, the perturbation can have different charac
 
 **Lp norm** (where p is a value between 1 and ∞): It is a generalization of the L1, L2 and L∞ norms.
 
-**For our project, we will use and compare "L∞".**
+**For our project, we will use and compare in attacks "L∞" norm.**
 
 The distance "L∞" is a fundamental measure in adversarial attack problems, as it represents the maximum change that is applied to a single pixel in the image during the generation of adversarial samples.
 Limiting the distance "L∞" to a specific epsilon value ( in our case 8/255 ) has several motivations and importance:
