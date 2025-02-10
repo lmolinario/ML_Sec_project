@@ -190,6 +190,6 @@ Finally, it is necessary to highlight that to evaluate an adversarial attack, **
 
 A global analysis approach of both factors is desirable: compare the confidence reduction and the amount of perturbation to see **which attack is more effective with the smallest possible perturbation**.
 
-**Examples of perturbation and confidence analysis**
+**Perturbation and Confidence plot**
 ![Confidence_Sample_1.jpg](misc/Confidence_Sample_1.jpg)
 ![Explainability_model_Andriushchenko2020Understanding.jpg](misc/Explainability_model_Andriushchenko2020Understanding.jpg)
