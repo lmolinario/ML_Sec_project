@@ -43,7 +43,7 @@ This project is developed for the UNICA.IT University - Machine Learning Securit
 	and then run the notebook
 
 ## **Project Goal**
-This project aims to reevaluate five RobustBench models using another attack algorithm (e.g., FMN) and identify samples for which one attack succeeds while the other fails. In other words, we aim to compare the effectiveness of different attacks against robust models and analyze which cases one type of attack is effective while another fails, thus contributing to a deeper understanding of the robustness of models and attack algorithms.
+This project aims to re-evaluate five RobustBench models using another attack algorithm (e.g., FMN) and identify samples for which one attack succeeds while the other fails. In other words, we aim to compare the effectiveness of different attacks against robust models and analyze which cases one type of attack is effective while another fails, thus contributing to a deeper understanding of the robustness of models and attack algorithms.
 
 ## **Solution Design**
 To re-evaluate the FNM model, we use as a basis for comparison the results of "AutoAttack - Robustbench"
