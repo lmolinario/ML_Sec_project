@@ -43,7 +43,7 @@ This project is developed for the UNICA.IT University - Machine Learning Securit
 	and then run the notebook
 
 ## **Project Goal**
-TThe goal of this project is to re-evaluate 5 RobustBench models using another attack algorithm (e.g., FMN) and identify samples for which one attack succeeds while the other fails. In other words, we aim to compare the effectiveness of different attacks against robust models, to analyze in which cases one type of attack is effective while another fails, thus contributing to a deeper understanding of the robustness of models and attack algorithms.
+This project aims to reevaluate five RobustBench models using another attack algorithm (e.g., FMN) and identify samples for which one attack succeeds while the other fails. In other words, we aim to compare the effectiveness of different attacks against robust models and analyze which cases one type of attack is effective while another fails, thus contributing to a deeper understanding of the robustness of models and attack algorithms.
 
 ## **Solution Design**
 To re-evaluate the FNM model, we use as a basis for comparison the results of "AutoAttack - Robustbench"
@@ -51,7 +51,7 @@ calculated on the same epsilon (in this case epsilon = 8/255 with "L-inf" norm) 
 
 ### **Attack algorithm**
 As indicated in our project I took as a reference the **FMN attack**, also known as FGSM (Fast Gradient Sign Method), which is one of the most common attacks against neural networks.
-The basic idea of this attack is to calculate the gradient of the model with respect to the input image and add a perturbation in the direction of the gradient to maximize the loss. This type of attack can be implemented as follows:
+The basic idea of this attack is to calculate the model's gradient concerning the input image and add a perturbation in the direction of the gradient to maximize the loss. This type of attack can be implemented as follows:
 
 ![δ=ϵ⋅sign(∇xJ(θ,x,y))](misc/FormulaFMN.png)
 
@@ -61,7 +61,7 @@ Where:
 
 **ϵ** is the magnitude of the perturbation (i.e. the strength of the attack).
 
-**∇xJ(θ,x,y)** is the gradient of the loss function J with respect to the input image x, calculated for the model parameters θ.
+**∇xJ(θ,x,y)** is the gradient of the loss function J concerning the input image x, calculated for the model parameters θ.
 
 **sign(⋅)** refers to the function that takes the sign of each gradient value.
 
@@ -75,7 +75,7 @@ Depending on the type of norm chosen, the perturbation can have different charac
 
 **L2 norm (Euclidean)**: measures the Euclidean distance between the original and perturbed images. The L2 norm is generally sensitive to large changes in the images, but may not capture very small local perturbations that affect recognition.
 
-**L1 norm**: measures the absolute sum of the pixel-by-pixel differences. It is less sensitive than the L2 norm to large perturbations, but can be effective for detecting small uniformly distributed changes.
+**L1 norm**: measures the absolute sum of the pixel-by-pixel differences. It is less sensitive than the L2 norm to large perturbations but can be effective for detecting small uniformly distributed changes.
 
 **Lp norm** (where p is a value between 1 and ∞): It is a generalization of the L1, L2 and L∞ norms.
 
@@ -89,15 +89,15 @@ A smaller perturbation (epsilon < 8/255 ) ensures that the changes in pixels are
 Additionally, the CIFAR-10 dataset uses normalized images with pixel values between 0 and 1.
 A value of epsilon = 8/255 represents a very small change (about 3% of the full scale), which is consistent with the idea of ​​a “sneaky” perturbation that exploits the model’s vulnerability without excessively changing the image.
 The choice of epsilon = 8/255 is not arbitrary: it is a standardized value in many adversarial attack studies, especially for models tested on CIFAR-10 with the “L∞” norm.
-It allows direct comparison of adversarial and defense results, since many benchmarks use the same bound.
+It allows direct comparison of adversarial and defense results since many benchmarks use the same bound.
 
 Generating adversarial samples with smaller “L∞” constraints requires less exploration of the perturbation space, making the attacks more efficient to compute.
-Larger perturbations may trigger model- or dataset-specific artifacts, compromising the generalizability of the results.
+Larger perturbations may trigger model- or dataset-specific artefacts, compromising the generalizability of the results.
 
 ### **Modularity** 
 The project is structured in a modular way to allow the replacement of attack models and algorithms without having to redo the entire flow.
 
-To do this I divided the code into "functions", "classes" and used the "Strategy Design Pattern" for the attack class.
+To do this I divided the code into "functions", and "classes" and used the "Strategy Design Pattern" for the attack class.
 
 ### **Scalability**
 The system will be scalable to be able to add more RobustBench models or try different attack algorithms in the future.
@@ -133,19 +133,19 @@ We identified **discordant samples**, i.e. those for which **FMN and AutoAttack 
 - **AutoAttack is more effective** in samples: `27, 31, 43, 57`
 - **FMN is more effective** in sample: `28`
 - **Motivation:**
-- AutoAttack is more effective in most cases because it finds **a more aggressive direction in the perturbation**.
-- FMN manages to outperform it in sample `28`, probably because it **minimizes the perturbation better**, although it fails.
+	- AutoAttack is more effective in most cases because it finds **a more aggressive direction in the perturbation**.
+	- FMN manages to outperform it in sample `28`, probably because it **minimizes the perturbation better**, although it fails.
 
 ### **Wong2020Fast**
 - **3 discordant samples (5, 16, 46)**
-- **AutoAttack more effective in all cases**
+- **AutoAttack is more effective in all cases**
 - **Rate:**
-- For this model, AutoAttack generated more effective perturbations than FMN, which may indicate that Wong2020Fast is **more resistant to small perturbations** (like FMN), but more vulnerable to more aggressive perturbations (like AutoAttack).
+	- For this model, AutoAttack generated more effective perturbations than FMN, which may indicate that Wong2020Fast is **more resistant to small perturbations** (like FMN), but more vulnerable to more aggressive perturbations (like AutoAttack).
 
 ### **Andriushchenko2020Understanding**, **Sitawarin2020Improving**, **Cui2023Decoupled_WRN-28-10**
 - **No discordant samples**
 - **Rate:**
-- FMN and AutoAttack likely had the same effect on all samples, indicating that the model is **equally vulnerable** to both types of attacks.
+	- FMN and AutoAttack likely had the same effect on all samples, indicating that the model is **equally vulnerable** to both types of attacks.
 
 ### **Sample 28 Analysis**
 
