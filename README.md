@@ -158,7 +158,7 @@ AutoAttack was successful in changing the class, in fact after the attack, the m
 
 FMN failed to change the class, which indicates that the perturbation found by FMN was not sufficient to force a class change: FMN is designed to find the minimum possible perturbation, so it may have failed to pass the model's decision threshold.
 
-FMN generated a more confident prediction than AutoAttack, in fact the model's confidence after FMN is `0.4238`, significantly higher than the confidence after AutoAttack (`0.1031`). This suggests that **FMN did not significantly alter the distribution of pixel values**, 
+FMN generated a more confident prediction than AutoAttack, in fact, the model's confidence after FMN is `0.4238`, significantly higher than the confidence after AutoAttack (`0.1031`). This suggests that **FMN did not significantly alter the distribution of pixel values**, 
 leaving the model more confident in its decision. **AutoAttack, on the other hand, introduced a perturbation that confused the model, dramatically reducing its confidence in the prediction.**
 
 One reason could be that FMN may have encountered a difficult decision barrier since it tries to minimize the perturbation, it may not have found an effective direction to change the prediction without exceeding the threshold of ε.
@@ -170,7 +170,7 @@ These results are consistent with the nature of the attacks: FMN seeks the minim
 
 ### **Comparison with the State of the Art**
 
-The results obtained are in line with what reported in the literature on adversarial attacks:
+The results obtained are in line with what is reported in the literature on adversarial attacks:
 
 AutoAttack is known to be one of the strongest and most reliable attacks, while FMN was developed to find minimal perturbations, often resulting less effective than more aggressive attacks.
 More recent models (e.g. Cui2023Decoupled_WRN-28-10) show greater robustness, confirming the trends observed in RobustBench benchmarks.
@@ -185,11 +185,11 @@ Finally, it is necessary to highlight that to evaluate an adversarial attack, **
 
 **Perturbation** measures how much the original sample has been modified to generate the adversarial image. It is useful to evaluate:
 1. **Attack efficiency**: an attack that induces error with a smaller perturbation is more effective.
-2. **Attack perceptibility** : if the perturbation is visible to the human eye, the attack may be less stealthy.
-3. **Model robustness** : if the model withstands large perturbations without changing output, it is more robust.
+2. **Attack perceptibility**: if the perturbation is visible to the human eye, the attack may be less stealthy.
+3. **Model robustness**: if the model withstands large perturbations without changing output, it is more robust.
 
 A global analysis approach of both factors is desirable: compare the confidence reduction and the amount of perturbation to see **which attack is more effective with the smallest possible perturbation**.
 
-**Perturbation and Confidence plot**
+###**Perturbation and Confidence plot**
 ![Confidence_Sample_1.jpg](misc/Confidence_Sample_1.jpg)
 ![Explainability_model_Andriushchenko2020Understanding.jpg](misc/Explainability_model_Andriushchenko2020Understanding.jpg)
