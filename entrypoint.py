@@ -15,7 +15,8 @@ from secml.ml.classifiers.loss import CSoftmax  # Softmax function for classific
 from secml.ml.features.normalization import CNormalizerMinMax  # Min-Max normalization utility
 from secml.ml.peval.metrics import CMetricAccuracy  # Accuracy metric computation
 from attack.AttackStrategy import AttackContext,FMNAttackStrategy,AutoAttackStrategy
-import misc.logo
+import misc.logo # project logo
+
 """## Global Variables
 Contains definition of global variables
 """
