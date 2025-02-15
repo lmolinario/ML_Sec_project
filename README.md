@@ -43,15 +43,18 @@ This project is developed for the UNICA.IT University - Machine Learning Securit
 	and then run the notebook
 
 ## **Project Goal**
-This project aims to re-evaluate five RobustBench models using another attack algorithm (e.g., FMN) and identify samples for which one attack succeeds while the other fails. In other words, we aim to compare the effectiveness of different attacks against robust models and analyze which cases one type of attack is effective while another fails, thus contributing to a deeper understanding of the robustness of models and attack algorithms.
+This project aims to re-evaluate five RobustBench models using another attack algorithm (e.g., FMN) and identify samples for which one attack succeeds while the other fails. 
+In other words, we aim to compare the effectiveness of different attacks against robust models and analyze which cases one type of attack is effective while another fails, 
+thus contributing to a deeper understanding of the robustness of models and attack algorithms.
 
 ## **Solution Design**
 To re-evaluate the FNM model, we use as a basis for comparison the results of "AutoAttack - Robustbench"
 calculated on the same epsilon (in this case epsilon = 8/255 with "L-inf" norm) and we take into account the samples that successfully perturb the image with epsilon < 8/255.
 
 ### **Attack algorithm**
-As indicated in our project I took as a reference the **FMN attack**, also known as FGSM (Fast Gradient Sign Method), which is one of the most common attacks against neural networks.
-The basic idea of this attack is to calculate the model's gradient concerning the input image and add a perturbation in the direction of the gradient to maximize the loss. This type of attack can be implemented as follows:
+As indicated in our project we took as a reference the **FMN attack**, also known as FGSM (Fast Gradient Sign Method), which is one of the most common attacks against neural networks.
+The basic idea of this attack is to calculate the model's gradient concerning the input image and add a perturbation in the direction of the gradient to maximize the loss. 
+This type of attack can be implemented as follows:
 
 ![δ=ϵ⋅sign(∇xJ(θ,x,y))](misc/FormulaFMN.png)
 
@@ -87,7 +90,7 @@ Adversarial attacks must be visually imperceptible to a human observer. If the p
 A smaller perturbation (epsilon < 8/255 ) ensures that the changes in pixels are minimal, keeping the image visually similar to the original.
 
 Additionally, the CIFAR-10 dataset uses normalized images with pixel values between 0 and 1.
-A value of epsilon = 8/255 represents a very small change (about 3% of the full scale), which is consistent with the idea of ​​a “sneaky” perturbation that exploits the model’s vulnerability without excessively changing the image.
+A value of epsilon = 8/255 represents a very small change (about 3% of the full scale), which is consistent with the idea of a “sneaky” perturbation that exploits the model’s vulnerability without excessively changing the image.
 The choice of epsilon = 8/255 is not arbitrary: it is a standardized value in many adversarial attack studies, especially for models tested on CIFAR-10 with the “L∞” norm.
 It allows direct comparison of adversarial and defense results since many benchmarks use the same bound.
 
@@ -105,7 +108,8 @@ The system will be scalable to be able to add more RobustBench models or try dif
 ## **Conclusions**
 After analyzing the results of the two adversarial attacks (FMN and AutoAttack) on five RobustBench models, the following considerations can be made:
 
-FMN is designed to find the minimum perturbation needed to alter the classification. If the required perturbation exceeds the available budget (ε = 8/255), the attack can fail, leaving the prediction unchanged.
+FMN is designed to find the minimum perturbation needed to alter the classification. 
+If the required perturbation exceeds the available budget (ε = 8/255), the attack can fail, leaving the prediction unchanged.
 
 AutoAttack combines multiple attacks (PGD, APGD, Square Attack, FAB), increasing the probability of finding an effective perturbation.
 This makes it a more robust attack than FMN, which instead focuses on perturbation minimization.
@@ -156,12 +160,15 @@ We identified **discordant samples**, i.e. those for which **FMN and AutoAttack 
 
 AutoAttack was successful in changing the class, in fact after the attack, the model classified the image as `'cat'` instead of `'truck'`.
 
-FMN failed to change the class, which indicates that the perturbation found by FMN was not sufficient to force a class change: FMN is designed to find the minimum possible perturbation, so it may have failed to pass the model's decision threshold.
+FMN failed to change the class, which indicates that the perturbation found by FMN was not sufficient to force a class change: FMN is designed to find the minimum possible perturbation, 
+so it may have failed to pass the model's decision threshold.
 
-FMN generated a more confident prediction than AutoAttack, in fact, the model's confidence after FMN is `0.4238`, significantly higher than the confidence after AutoAttack (`0.1031`). This suggests that **FMN did not significantly alter the distribution of pixel values**, 
+FMN generated a more confident prediction than AutoAttack, in fact, the model's confidence after FMN is `0.4238`, significantly higher than the confidence after AutoAttack (`0.1031`). 
+This suggests that **FMN did not significantly alter the distribution of pixel values**, 
 leaving the model more confident in its decision. **AutoAttack, on the other hand, introduced a perturbation that confused the model, dramatically reducing its confidence in the prediction.**
 
-One reason could be that FMN may have encountered a difficult decision barrier since it tries to minimize the perturbation, it may not have found an effective direction to change the prediction without exceeding the threshold of ε.
+One reason could be that FMN may have encountered a difficult decision barrier since it tries to minimize the perturbation,
+it may not have found an effective direction to change the prediction without exceeding the threshold of ε.
 
 FMN maintained higher confidence in the original class, which suggests that the attack did not significantly alter the image.
 
@@ -174,7 +181,8 @@ The results obtained are in line with what is reported in the literature on adve
 
 AutoAttack is known to be one of the strongest and most reliable attacks, while FMN was developed to find minimal perturbations, often resulting less effective than more aggressive attacks.
 More recent models (e.g. Cui2023Decoupled_WRN-28-10) show greater robustness, confirming the trends observed in RobustBench benchmarks.
-The differences in sensitivity between models are consistent with previous studies, where it was observed that some models can be more vulnerable to sparse perturbations (Square Attack) than to minimal perturbations (FMN).
+The differences in sensitivity between models are consistent with previous studies, where it was observed that some models can be more vulnerable to sparse perturbations (Square Attack) 
+than to minimal perturbations (FMN).
 
 Finally, it is necessary to highlight that to evaluate an adversarial attack, **both confidence and perturbation** must be considered, depending on the aspect that you want to analyze.
 
@@ -188,7 +196,8 @@ Finally, it is necessary to highlight that to evaluate an adversarial attack, **
 2. **Attack perceptibility**: if the perturbation is visible to the human eye, the attack may be less stealthy.
 3. **Model robustness**: if the model withstands large perturbations without changing output, it is more robust.
 
-A global analysis approach of both factors is desirable: compare the confidence reduction and the amount of perturbation to see **which attack is more effective with the smallest possible perturbation**.
+A global analysis approach of both factors is desirable: compare the confidence reduction and the amount of perturbation to see 
+**which attack is more effective with the smallest possible perturbation**.
 
 ### **Perturbation and Confidence plot**
 ![Confidence_Sample_1.jpg](misc/Confidence_Sample_1.jpg)
