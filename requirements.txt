@@ -1,7 +1,8 @@
 # Requires Python 3.10
-git+https://github.com/RobustBench/robustbench
 secml
 foolbox
 torch
 numpy==1.23.5
 matplotlib
+git+https://github.com/RobustBench/robustbench #if use a virtenv or pip install --break-system-packages git+https://github.com/RobustBench/robustbench
+
